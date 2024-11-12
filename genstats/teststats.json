@@ -1,0 +1,36 @@
+{
+    "table": {
+        "sudden_death": {
+            "id": 10,
+            "name": "Game ended due to exhausted piece",
+            "type": "bool"
+        },
+        "cities_captured": {
+            "id": 11,
+            "name": "Total number of cities captured by all players",
+            "type": "int"
+        },
+        "average_pieces_per_turn": {
+            "id": 11,
+            "name": "Overal average number of pieces played per turn",
+            "type": "float"
+        }
+    },
+    "player": {
+        "number_turns": {
+            "id": 20,
+            "name": "Number of turns played",
+            "type": "int"
+        },
+        "met_objective": {
+            "id": 21,
+            "name": "Whether the player met their personal objective",
+            "type": "bool"
+        },
+        "average_die_roll": {
+            "id": 22,
+            "name": "Average battle die roll",
+            "type": "float"
+        }
+    }
+}
