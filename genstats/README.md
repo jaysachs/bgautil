@@ -1,3 +1,8 @@
+# genstats
+
+**genstats** provides a tool for generating well-typed enum codes
+corresponding to the BGA `stats.json` file.
+
 ## Generation
 
 Generate the Stats class via
@@ -7,18 +12,18 @@ $ php genstats.php gamename > modules/php/Stats.php
 ```
 
 (assumes the current directory is the main game directory where
-stats.json is located).
+`stats.json` is located).
 
-The `Stats.php` file wil contain backed enums for each statistic defined
-in `stats.json`, with the enum name derived from the stats.json identifier,
-and with typed methods for the different kinds of stats (table / player,
-int / float / bool).
+The generated `Stats.php` file wil contain definitions of backed enums
+for each statistic defined in `stats.json`, with the enum name derived
+from the `stats.json` identifiers, and with typed methods for the
+different kinds of stats (table / player, int / float / bool).
 
 ## Usage in game code
 
 ### Configuration
 
-Insert one line of configuration into the Game.php constructor:
+Insert one line of configuration into the `Game.php` constructor:
 
 ```php
    public function __construct() {
@@ -30,7 +35,7 @@ Insert one line of configuration into the Game.php constructor:
 
 ### Initialization
 
-Initialize stats in setupNewGame():
+Initialize stats in `setupNewGame()`:
 
 ```php
     protected function setupNewGame($players, $options = []) {
@@ -68,7 +73,7 @@ Initialize stats in setupNewGame():
 
 ## TODOs:
 
- * improve `toIdentifier`.
+ * improve `toIdentifier()`.
  * determine if need to include the BGA license boilerplate in the
    generated code.
  * let the Stats class name be customized?
