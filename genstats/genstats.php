@@ -119,7 +119,7 @@ declare(strict_types=1);
 namespace Bga\Games\<?php echo $gamename ?>\StatsGen;
 
 class Impl {
-    static $impl = null;
+    static mixed $impl = null;
 };
 
 enum IntPlayerStats: string {
@@ -149,7 +149,7 @@ enum IntPlayerStats: string {
         }
     }
 
-    public function initMap(array /* int */ $player_ids, Closure &$val): void {
+    public function initMap(array /* int */ $player_ids, \Closure $val): void {
         foreach ($player_ids as $pid) {
             $this->init($pid, $val($pid));
         }
@@ -183,7 +183,7 @@ enum FloatPlayerStats: string {
         }
     }
 
-    public function initMap(array /*int*/ $player_ids, Closure &$val): void {
+    public function initMap(array /*int*/ $player_ids, \Closure $val): void {
         foreach ($player_ids as $pid) {
             $this->init($pid, $val($pid));
         }
@@ -213,7 +213,7 @@ enum BoolPlayerStats: string {
         }
     }
 
-    public function initMap(array /*int*/ $player_ids, Closure &$val): void {
+    public function initMap(array /*int*/ $player_ids, \Closure $val): void {
         foreach ($player_ids as $pid) {
             $this->init($pid, $val($pid));
         }
@@ -296,32 +296,32 @@ use Bga\Games\<?php echo $gamename ?>\StatsGen\ {
 class Stats {
     // Player int stats
 <?php foreach (statsFor("player", "int") as $n => $id) { ?>
-    const PLAYER_<?php echo $id ?> = IntPlayerStats::<?php echo $id ?>;
+    public const IntPlayerStats PLAYER_<?php echo $id ?> = IntPlayerStats::<?php echo $id ?>;
 <?php } ?>
 
     // Player float stats
 <?php foreach (statsFor("player", "float") as $n => $id) { ?>
-    const PLAYER_<?php echo $id ?> = FloatPlayerStats::<?php echo $id ?>;
+    public const FloatPlayerStats PLAYER_<?php echo $id ?> = FloatPlayerStats::<?php echo $id ?>;
 <?php } ?>
 
     // Player bool stats
 <?php foreach (statsFor("player", "bool") as $n => $id) { ?>
-    const PLAYER_<?php echo $id ?> = BoolPlayerStats::<?php echo $id ?>;
+    public const BoolPlayerStats  PLAYER_<?php echo $id ?> = BoolPlayerStats::<?php echo $id ?>;
 <?php } ?>
 
     // Table int stats
 <?php foreach (statsFor("table", "int") as $n => $id) { ?>
-    const TABLE_<?php echo $id ?> = IntTableStats::<?php echo $id ?>;
+    public const IntTableStats TABLE_<?php echo $id ?> = IntTableStats::<?php echo $id ?>;
 <?php } ?>
 
     // Table float stats
 <?php foreach (statsFor("table", "float") as $n => $id) { ?>
-    const TABLE_<?php echo $id ?> = FloatTableStats::<?php echo $id ?>;
+    public const FloatTableStats TABLE_<?php echo $id ?> = FloatTableStats::<?php echo $id ?>;
 <?php } ?>
 
     // Table bool stats
 <?php foreach (statsFor("table", "bool") as $n => $id) { ?>
-    const TABLE_<?php echo $id ?> = BoolTableStats::<?php echo $id ?>;
+    public const BoolTableStats TABLE_<?php echo $id ?> = BoolTableStats::<?php echo $id ?>;
 <?php } ?>
 
     public static function init(mixed $the_impl): void {

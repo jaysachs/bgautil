@@ -70,7 +70,7 @@ class FakeImpl {
 
 final class StatsTest extends TestCase
 {
-    const PLAYER_IDS = [ 5, 7 ];
+    const array PLAYER_IDS = [ 5, 7 ];
     private ?FakeImpl $impl;
 
     protected function setUp(): void {
@@ -91,6 +91,13 @@ final class StatsTest extends TestCase
         $this->assertEquals(0, Stats::TABLE_CITIES_CAPTURED->get());
         $this->assertEquals(false, Stats::TABLE_SUDDEN_DEATH->get());
         $this->assertEquals(0.0, Stats::TABLE_AVERAGE_PIECES_PER_TURN->get());
+    }
+
+    public function testInitMap(): void {
+        Stats::PLAYER_NUMBER_TURNS->initMap(self::PLAYER_IDS,
+                                            function (int $p) { return $p*$p+1; });
+        $this->assertEquals(26, Stats::PLAYER_NUMBER_TURNS->get(5));
+        $this->assertEquals(50, Stats::PLAYER_NUMBER_TURNS->get(7));
     }
 
     public function testPlayerInt(): void {
