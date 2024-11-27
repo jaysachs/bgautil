@@ -342,32 +342,32 @@ use Bga\Games\<?php echo $gamename ?>\StatsGen\ {
 class Stats {
     // Player int stats
 <?php foreach (statsFor("player", "int") as $n => $id) { ?>
-    public const IntPlayerStats PLAYER_<?php echo $id ?> = IntPlayerStats::<?php echo $id ?>;
+    public const PLAYER_<?php echo $id ?> = IntPlayerStats::<?php echo $id ?>;
 <?php } ?>
 
     // Player float stats
 <?php foreach (statsFor("player", "float") as $n => $id) { ?>
-    public const FloatPlayerStats PLAYER_<?php echo $id ?> = FloatPlayerStats::<?php echo $id ?>;
+    public const PLAYER_<?php echo $id ?> = FloatPlayerStats::<?php echo $id ?>;
 <?php } ?>
 
     // Player bool stats
 <?php foreach (statsFor("player", "bool") as $n => $id) { ?>
-    public const BoolPlayerStats  PLAYER_<?php echo $id ?> = BoolPlayerStats::<?php echo $id ?>;
+    public const PLAYER_<?php echo $id ?> = BoolPlayerStats::<?php echo $id ?>;
 <?php } ?>
 
     // Table int stats
 <?php foreach (statsFor("table", "int") as $n => $id) { ?>
-    public const IntTableStats TABLE_<?php echo $id ?> = IntTableStats::<?php echo $id ?>;
+    public const TABLE_<?php echo $id ?> = IntTableStats::<?php echo $id ?>;
 <?php } ?>
 
     // Table float stats
 <?php foreach (statsFor("table", "float") as $n => $id) { ?>
-    public const FloatTableStats TABLE_<?php echo $id ?> = FloatTableStats::<?php echo $id ?>;
+    public const TABLE_<?php echo $id ?> = FloatTableStats::<?php echo $id ?>;
 <?php } ?>
 
     // Table bool stats
 <?php foreach (statsFor("table", "bool") as $n => $id) { ?>
-    public const BoolTableStats TABLE_<?php echo $id ?> = BoolTableStats::<?php echo $id ?>;
+    public const TABLE_<?php echo $id ?> = BoolTableStats::<?php echo $id ?>;
 <?php } ?>
 
     public static function init(mixed $the_impl): void {
