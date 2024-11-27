@@ -143,12 +143,14 @@ enum IntPlayerStats: string {
         Impl::$impl->initStat("player", $this->value, $val, $player_id);
     }
 
-    public function initAll(array /*int*/ $player_ids, int $val = 0): void {
+    /** @param int[] $player_ids */
+    public function initAll(array $player_ids, int $val = 0): void {
         foreach ($player_ids as $pid) {
             $this->init($pid, $val);
         }
     }
 
+    /** @param int[] $player_ids */
     public function initMap(array /* int */ $player_ids, \Closure $val): void {
         foreach ($player_ids as $pid) {
             $this->init($pid, $val($pid));
@@ -177,13 +179,15 @@ enum FloatPlayerStats: string {
         Impl::$impl->initStat("player", $this->value, $val, $player_id);
     }
 
-    public function initAll(array /*int*/ $player_ids, float $val = 0.0): void {
+    /** @param int[] $player_ids */
+    public function initAll(array $player_ids, float $val = 0.0): void {
         foreach ($player_ids as $pid) {
             $this->init($pid, $val);
         }
     }
 
-    public function initMap(array /*int*/ $player_ids, \Closure $val): void {
+    /** @param int[] $player_ids */
+    public function initMap(array $player_ids, \Closure $val): void {
         foreach ($player_ids as $pid) {
             $this->init($pid, $val($pid));
         }
@@ -207,13 +211,15 @@ enum BoolPlayerStats: string {
         Impl::$impl->initStat("player", $this->value, $val, $player_id);
     }
 
-    public function initAll(array /*int*/ $player_ids, bool $val = false): void {
+    /** @param int[] $player_ids */
+    public function initAll(array $player_ids, bool $val = false): void {
         foreach ($player_ids as $pid) {
             $this->init($pid, $val);
         }
     }
 
-    public function initMap(array /*int*/ $player_ids, \Closure $val): void {
+    /** @param int[] $player_ids */
+    public function initMap(array $player_ids, \Closure $val): void {
         foreach ($player_ids as $pid) {
             $this->init($pid, $val($pid));
         }
@@ -331,7 +337,8 @@ class Stats {
     /*
      * Convenience method to initialize all stats to "zero".
      */
-    public static function initAll(array /* int */ $player_ids): void {
+    /** @param int[] $player_ids */
+    public static function initAll(array $player_ids): void {
 <?php foreach (statsFor("player", "int") as $n => $id) { ?>
         self::PLAYER_<?php echo $id ?>->initAll($player_ids, 0);
 <?php } ?>
