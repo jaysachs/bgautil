@@ -122,8 +122,12 @@ class Impl {
     static mixed $impl = null;
 };
 
+<?php
+$stats = statsFor("player", "int");
+if (count($stats) > 0) {
+?>
 enum IntPlayerStats: string {
-<?php foreach (statsFor("player", "int") as $name => $id) { ?>
+<?php foreach ($stats as $name => $id) { ?>
     case <?php echo $id ?> = "<?php echo $name ?>";
 <?php } ?>
 
@@ -150,16 +154,23 @@ enum IntPlayerStats: string {
         }
     }
 
-    /** @param int[] $player_ids */
-    public function initMap(array /* int */ $player_ids, \Closure $val): void {
+    /**
+     * @param int[] $player_ids
+     * @param \Closure(int):int $val
+     */
+    public function initMap(array $player_ids, \Closure $val): void {
         foreach ($player_ids as $pid) {
             $this->init($pid, $val($pid));
         }
     }
 }
-
+<?php
+}
+$stats = statsFor("player", "float");
+if (count($stats) > 0) {
+?>
 enum FloatPlayerStats: string {
-<?php foreach (statsFor("player", "float") as $name => $id) { ?>
+<?php foreach ($stats as $name => $id) { ?>
     case <?php echo $id ?> = "<?php echo $name ?>";
 <?php } ?>
 
@@ -186,7 +197,10 @@ enum FloatPlayerStats: string {
         }
     }
 
-    /** @param int[] $player_ids */
+    /**
+     * @param int[] $player_ids
+     * @param \Closure(int):float $val
+     */
     public function initMap(array $player_ids, \Closure $val): void {
         foreach ($player_ids as $pid) {
             $this->init($pid, $val($pid));
@@ -194,8 +208,13 @@ enum FloatPlayerStats: string {
     }
 }
 
+<?php
+}
+$stats = statsFor("player", "bool");
+if (count($stats) > 0) {
+?>
 enum BoolPlayerStats: string {
-<?php foreach (statsFor("player", "bool") as $name => $id) { ?>
+<?php foreach ($stats as $name => $id) { ?>
     case <?php echo $id ?> = "<?php echo $name ?>";
 <?php } ?>
 
@@ -218,7 +237,10 @@ enum BoolPlayerStats: string {
         }
     }
 
-    /** @param int[] $player_ids */
+    /**
+     * @param int[] $player_ids
+     * @param \Closure(int):bool $val
+     */
     public function initMap(array $player_ids, \Closure $val): void {
         foreach ($player_ids as $pid) {
             $this->init($pid, $val($pid));
@@ -226,8 +248,13 @@ enum BoolPlayerStats: string {
     }
 }
 
+<?php
+}
+$stats = statsFor("table", "int");
+if (count($stats) > 0) {
+?>
 enum IntTableStats: string {
-<?php foreach (statsFor("table", "int") as $name => $id) { ?>
+<?php foreach ($stats as $name => $id) { ?>
     case <?php echo $id ?> = "<?php echo $name ?>";
 <?php } ?>
 
@@ -248,8 +275,13 @@ enum IntTableStats: string {
     }
 }
 
+<?php
+}
+$stats = statsFor("table", "float");
+if (count($stats) > 0) {
+?>
 enum FloatTableStats: string {
-<?php foreach (statsFor("table", "float") as $name => $id) { ?>
+<?php foreach ($stats as $name => $id) { ?>
     case <?php echo $id ?> = "<?php echo $name ?>";
 <?php } ?>
 
@@ -270,8 +302,13 @@ enum FloatTableStats: string {
     }
 }
 
+<?php
+}
+$stats = statsFor("table", "bool");
+if (count($stats) > 0) {
+?>
 enum BoolTableStats: string {
-<?php foreach (statsFor("table", "bool") as $name => $id) { ?>
+<?php foreach ($stats as $name => $id) { ?>
     case <?php echo $id ?> = "<?php echo $name ?>";
 <?php } ?>
 
@@ -287,6 +324,9 @@ enum BoolTableStats: string {
         Impl::$impl->initStat("table", $this->value, $val);
     }
 }
+<?php
+}
+?>
 
 namespace Bga\Games\<?php echo $gamename ?>;
 use Bga\Games\<?php echo $gamename ?>\StatsGen\ {
