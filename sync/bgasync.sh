@@ -6,7 +6,7 @@ PROG=$0
 
 
 function usage() {
-    echo "usage: $PROG -u user -g game -s src-dir [-mode mirror|sync] [-dry-run]"
+    echo "usage: $PROG -u user -g game -s src-dir [-mode mirror|sync] [-d]"
     exit 1
 }
 
@@ -20,7 +20,7 @@ do
             BGAUSER="$OPTARG"
             ;;
         g)
-            BGAPROJ="$OPTARG"
+            BGAGAME="$OPTARG"
             ;;
         m)
             MODE="$OPTARG"
@@ -34,7 +34,7 @@ do
     esac
 done
 
-if [ "$BGAUSER" == "" -o "$SRC" == "" -o "$BGAPROJ" == "" ]; then
+if [ "$BGAUSER" == "" -o "$SRC" == "" -o "$BGAGAME" == "" ]; then
     usage
 fi
 
