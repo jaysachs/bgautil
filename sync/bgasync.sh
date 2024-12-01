@@ -38,9 +38,6 @@ if [ "$BGAUSER" == "" -o "$SRC" == "" -o "$BGAPROJ" == "" ]; then
     usage
 fi
 
-# SRC="$HOME/projects/bga/babylonia"
-
-DEST=${BGAGAME}
 cd "${SRC}"
 
 LAST_SYNC=.last_sync
@@ -61,13 +58,13 @@ function lftp_via_sync() {
     declare -a files
     readarray -t files < \
               <(find -E -X . -newer ${LAST_SYNC} -not -regex ^./"${EXCLUDES}" -type f)
-    echo mput -O "${DEST}" -d "${files[@]}" | ${COPY} && ${TOUCH}
+    echo mput -O "${BGAGAME}" -d "${files[@]}" | ${COPY} && ${TOUCH}
 }
 
 function lftp_mirror() {
     REPEAT=$1
     lftp "${HOST}" <<EOF
-cd ${DEST}
+cd ${BGAGAME}
 ${REPEAT} mirror ${DRY_RUN} -R -vvv -x ^'${EXCLUDES}'
 EOF
 }
