@@ -45,7 +45,7 @@ HOST=sftp://${BGAUSER}:@1.studio.boardgamearena.com:2022
 
 # exclude "local" dir, any dot-dir (like .git), emacs temp files
 # and BGA-controlled files.
-EXCLUDES='(((work/|local/|\.|.*#).*)|LICENSE_BGA|Makefile|_ide_helper.php|psalm.xml)'
+EXCLUDES='(((work/|local/|\.|.*#).*)|LICENSE_BGA|Makefile|_ide_helper.php|bga-framework.d.ts|psalm.xml|node_modules/.*)'
 
 function lftp_via_sync() {
     COPY="lftp ${HOST}"
