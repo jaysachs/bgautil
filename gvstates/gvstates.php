@@ -4,11 +4,15 @@
  * gvstates -- generate DOT file for a BGA game state machine
  *
  * Usage:
- *   Run in same directory as your `states.inc.php` file.
  *
- *      php path/to/gvstates.php | dot -T png > /tmp/mygamestates.png
+ *   php gvstates.php /path/to/states.inc.php
  *
- *   (or whatever output format you want & your dot command supports).
+ * emits the generated dotfile to stdout. You can omit the states file
+ * and it will look in the current directory for `states.inc.php`
+ *
+ * A fuller example including conversion to image:
+ *
+ *   php gvstates.php states.inc.php | dot -T png > /tmp/mygamestates.png
  */
 
 namespace Bga\GameFramework {
@@ -136,7 +140,17 @@ digraph {
 
 function clienttranslate(string $s): string { return $s; }
 
-require('states.inc.php');
+$file = "states.inc.php";
+if (count($argv) == 2) {
+    $file = $argv[1];
+} else if (count($argv) > 2) {
+    fwrite(STDERR, "Usage: php $argv[0] [ statesfilename ]\n");
+    exit(1);
+}
+if (!include($file)) {
+    fwrite(STDERR, "Unable to read $file\n");
+    exit(1);
+}
 
 generateGraphViz($machinestates);
 
