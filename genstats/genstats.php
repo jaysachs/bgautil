@@ -125,8 +125,12 @@ interface StatsImpl {
     public function initStat(string $type, string $name, mixed $index, int $player_id = 0): void;
 };
 
-class IntPlayerStat {
-    function __construct(private mixed $impl, private string $index) {}
+interface Stat {
+    public string $index { get; }
+}
+
+class IntPlayerStat implements Stat {
+    function __construct(private mixed $impl, public readonly string $index) {}
 
     public function init(array $player_ids, int $val = 0): void {
         foreach ($player_ids as $player_id) {
@@ -147,8 +151,8 @@ class IntPlayerStat {
     }
 }
 
-class BoolPlayerStat {
-    function __construct(private mixed $impl, private string $index) { }
+class BoolPlayerStat implements Stat {
+    function __construct(private mixed $impl, public readonly string $index) { }
 
     public function init(array $player_ids, bool $val = false): void {
         foreach ($player_ids as $player_id) {
@@ -165,8 +169,8 @@ class BoolPlayerStat {
     }
 }
 
-class FloatPlayerStat {
-    function __construct(private mixed $impl, private string $index) {}
+class FloatPlayerStat implements Stat {
+    function __construct(private mixed $impl, public readonly string $index) {}
 
     public function init(array $player_ids, float $val = 0.0): void {
         foreach ($player_ids as $player_id) {
@@ -187,8 +191,8 @@ class FloatPlayerStat {
     }
 }
 
-class IntTableStat {
-    function __construct(private mixed $impl, private string $index) {}
+class IntTableStat implements Stat {
+    function __construct(private mixed $impl, public readonly string $index) {}
 
     public function init(int $val = 0): void {
         $this->impl->initStat("table", $this->index, $val);
@@ -207,8 +211,8 @@ class IntTableStat {
     }
 }
 
-class BoolTableStat {
-    function __construct(private mixed $impl, private string $index) {}
+class BoolTableStat implements Stat {
+    function __construct(private mixed $impl, public readonly string $index) {}
 
     public function init(bool $val = false): void {
         $this->impl->initStat("table", $this->index, $val);
@@ -223,8 +227,8 @@ class BoolTableStat {
     }
 }
 
-class FloatTableStat {
-    function __construct(private mixed $impl, private string $index) { }
+class FloatTableStat implements Stat {
+    function __construct(private mixed $impl, public readonly string $index) { }
 
     public function init(float $val = 0.0): void {
         $this->impl->initStat("table", $this->index, $val);
@@ -243,100 +247,35 @@ class FloatTableStat {
     }
 }
 
-// namespace Bga\Games\<?php echo $gamename ?>;
-// use Bga\Games\<?php echo $gamename ?>\StatsGen\ {
-//     IntPlayerStat,
-//     BoolPlayerStat,
-//     FloatPlayerStat,
-//     IntTableStat,
-//     BoolTableStat,
-//     FloatTableStat,
-//     StatsImpl,
-// };
-
 class Stats {
 
     /** @param StatsImpl $impl */
     public function __construct(private /* StatsImpl */ mixed $impl) {
-      // Player int stats
-<?php foreach (statsFor("player", "int") as $n => $id) { ?>
-        $this->PLAYER_<?php echo $id ?> = new IntPlayerStat($impl, "<?php echo $n ?>");
-<?php } ?>
-
-    // Player float stats
-<?php foreach (statsFor("player", "float") as $n => $id) { ?>
-        $this->PLAYER_<?php echo $id ?> = new FloatPlayerStat($impl, "<?php echo $n ?>");
-<?php } ?>
-
-    // Player bool stats
-<?php foreach (statsFor("player", "bool") as $n => $id) { ?>
-        $this->PLAYER_<?php echo $id ?> = new BoolPlayerStat($impl, "<?php echo $n ?>");
-<?php } ?>
-
-    // Table int stats
-<?php foreach (statsFor("table", "int") as $n => $id) { ?>
-        $this->TABLE_<?php echo $id ?> = new IntTableStat($impl, "<?php echo $n ?>");
-<?php } ?>
-
-    // Table float stats
-<?php foreach (statsFor("table", "float") as $n => $id) { ?>
-        $this->TABLE_<?php echo $id ?> = new FloatTableStat($impl, "<?php echo $n ?>");
-<?php } ?>
-
-    // Table bool stats
-<?php foreach (statsFor("table", "bool") as $n => $id) { ?>
-        $this->TABLE_<?php echo $id ?> = new BoolTableStat($impl, "<?php echo $n ?>");
-<?php } ?>
+<?php foreach (["player", "table"] as $scope) {
+          foreach (["int", "float", "bool"] as $type) {
+              foreach (statsFor($scope, $type) as $n => $id) { ?>
+        $this-><?php echo strtoupper($scope) ?>_<?php echo $id ?> = new <?php echo ucfirst($type) . ucfirst($scope) ?>Stat($impl, "<?php echo $n ?>");
+<?php         }
+          }
+      } ?>
     }
 
     /** @param int[] $player_ids */
     public function initAll(array $player_ids): void {
-<?php foreach (statsFor("player", "int") as $n => $id) { ?>
-      $this->PLAYER_<?php echo $id ?>->init($player_ids);
-<?php } ?>
-<?php foreach (statsFor("player", "float") as $n => $id) { ?>
-      $this->PLAYER_<?php echo $id ?>->init($player_ids);
-<?php } ?>
-<?php foreach (statsFor("player", "bool") as $n => $id) { ?>
-      $this->PLAYER_<?php echo $id ?>->init($player_ids);
-<?php } ?>
-<?php foreach (statsFor("table", "int") as $n => $id) { ?>
-      $this->TABLE_<?php echo $id ?>->init();
-<?php } ?>
-<?php foreach (statsFor("table", "float") as $n => $id) { ?>
-      $this->TABLE_<?php echo $id ?>->init();
-<?php } ?>
-<?php foreach (statsFor("table", "bool") as $n => $id) { ?>
-      $this->TABLE_<?php echo $id ?>->init();
-<?php } ?>
+<?php foreach (["player", "table"] as $scope) {
+          foreach (["int", "float", "bool"] as $type) {
+              foreach (statsFor($scope, $type) as $n => $id) { ?>
+      $this-><?php echo strtoupper($scope) ?>_<?php echo $id ?>->init(<?php if ($scope == "player") { ?>$player_ids<?php } ?>);
+<?php         }
+          }
+      } ?>
     }
 
-    // Player int stats
-<?php foreach (statsFor("player", "int") as $n => $id) { ?>
-    public readonly IntPlayerStat $PLAYER_<?php echo $id ?>;
-<?php } ?>
-
-    // Player float stats
-<?php foreach (statsFor("player", "float") as $n => $id) { ?>
-    public readonly FloatPlayerStat $PLAYER_<?php echo $id ?>;
-<?php } ?>
-
-    // Player bool stats
-<?php foreach (statsFor("player", "bool") as $n => $id) { ?>
-    public readonly BoolPlayerStat $PLAYER_<?php echo $id ?>;
-<?php } ?>
-
-<?php foreach (statsFor("table", "int") as $n => $id) { ?>
-    public readonly IntTableStat $TABLE_<?php echo $id ?>;
-<?php } ?>
-
-    // Table float stats
-<?php foreach (statsFor("table", "float") as $n => $id) { ?>
-    public readonly FloatTableStat $TABLE_<?php echo $id ?>;
-<?php } ?>
-
-    // Table bool stats
-<?php foreach (statsFor("table", "bool") as $n => $id) { ?>
-    public readonly BoolTableStat $TABLE_<?php echo $id ?>;
-<?php } ?>
+<?php foreach (["player", "table"] as $scope) {
+          foreach (["int", "float", "bool"] as $type) {
+              foreach (statsFor($scope, $type) as $n => $id) { ?>
+    public readonly <?php echo ucfirst($type) . ucfirst($scope) ?>Stat $<?php echo strtoupper($scope) ?>_<?php echo $id ?>;
+<?php         }
+          }
+      } ?>
 }
