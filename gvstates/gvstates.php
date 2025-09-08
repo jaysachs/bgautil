@@ -13,6 +13,8 @@
  * A fuller example including conversion to image:
  *
  *   php gvstates.php states.inc.php | dot -T png > /tmp/mygamestates.png
+ *
+ * For documentation on Graphviz and DOT, see https://graphviz.org/
  */
 
 namespace Bga\GameFramework {
@@ -40,7 +42,6 @@ class GameState {
 }
 
 class GameStateBuilder {
-
 
     private function __construct(private GameState $gamestate) {}
 
@@ -98,7 +99,7 @@ class GameStateBuilder {
     }
 }
 
-}
+} // namespace
 
 namespace {
 
@@ -154,5 +155,5 @@ if (!include($file)) {
 
 generateGraphViz($machinestates);
 
-}
+} // namespace
 ?>
