@@ -24,15 +24,15 @@ class GameState {
 
     public string $name;
     public StateType $type;
-    public string $description;
-    public string $descriptionmyturn;
-    public string $action;
-    public string $args;
+    public ?string $description = null;
+    public ?string $descriptionmyturn = null;
+    public string $action = "";
+    public string $args = "";
     /** @var array<string,int> */
-    public array $transitions;
+    public array $transitions = [];
     /** @var array<string> */
-    public array $possibleactions;
-    public bool $updateGameProgression;
+    public array $possibleactions = [];
+    public bool $updateGameProgression = false;
 }
 
 class GameStateBuilder {
@@ -108,7 +108,7 @@ function node(GameState $state): string {
         StateType::GAME => 'ellipse',
         StateType::SYSTEM => 'doublecircle'
     };
-    return sprintf("%s [shape=%s];\n", $state->name, $shape);
+    return sprintf("%s [shape=%s,label=<<b>%s</b><br/><i>args:%s</i><br/><i>act:%s</i>>];\n", $state->name, $shape, $state->name, $state->args, $state->action);
 }
 
 function edge(GameState $state, string $label, GameState $dest): string {
