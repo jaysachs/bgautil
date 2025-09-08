@@ -108,7 +108,7 @@ function node(GameState $state): string {
         StateType::GAME => 'ellipse',
         StateType::SYSTEM => 'doublecircle'
     };
-    return sprintf("%s [shape=%s,label=<<b>%s</b><br/><i>args:%s</i><br/><i>act:%s</i>>];\n", $state->name, $shape, $state->name, $state->args, $state->action);
+    return sprintf("%s [shape=%s,label=<<b>%s</b><br/><i>args</i>:%s<br align=\"left\"/><i>act</i>:%s<br align=\"left\"/>>];\n", $state->name, $shape, $state->name, $state->args, $state->action);
 }
 
 function edge(GameState $state, string $label, GameState $dest): string {
