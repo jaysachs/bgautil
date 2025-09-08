@@ -116,286 +116,227 @@ echo "php\n";
 ?>
 declare(strict_types=1);
 
-namespace Bga\Games\<?php echo $gamename ?>\StatsGen;
+namespace Bga\Games\<?php echo $gamename ?>;
 
-class Impl {
-    static mixed $impl = null;
+interface StatsImpl {
+    public function incStat(mixed $delta, string $name, int $player_id = 0) : void;
+    public function setStat(mixed $val, string $name, int $player_id = 0) : void;
+    public function getStat(string $name, int $player_id = 0): mixed;
+    public function initStat(string $type, string $name, mixed $index, int $player_id = 0): void;
 };
 
-<?php
-$stats = statsFor("player", "int");
-if (count($stats) > 0) {
-?>
-enum IntPlayerStats: string {
-<?php foreach ($stats as $name => $id) { ?>
-    case <?php echo $id ?> = "<?php echo $name ?>";
-<?php } ?>
+class IntPlayerStat {
+    function __construct(private mixed $impl, private string $index) {}
+
+    public function init(array $player_ids, int $val = 0): void {
+        foreach ($player_ids as $player_id) {
+            $this->impl->initStat("player", $this->index, $val, $player_id);
+        }
+    }
 
     public function inc(int $player_id, int $delta = 1): void {
-        Impl::$impl->incStat($delta, $this->value, $player_id);
+        $this->impl->incStat($delta, $this->index, $player_id);
     }
 
     public function set(int $player_id, int $val): void {
-        Impl::$impl->setStat($val, $this->value, $player_id);
+        $this->impl->setStat($val, $this->index, $player_id);
     }
 
     public function get(int $player_id): int {
-        return Impl::$impl->getStat($this->value, $player_id);
-    }
-
-    public function init(int $player_id, int $val = 0): void {
-        Impl::$impl->initStat("player", $this->value, $val, $player_id);
-    }
-
-    /** @param int[] $player_ids */
-    public function initAll(array $player_ids, int $val = 0): void {
-        foreach ($player_ids as $pid) {
-            $this->init($pid, $val);
-        }
-    }
-
-    /**
-     * @param int[] $player_ids
-     * @param \Closure(int):int $val
-     */
-    public function initMap(array $player_ids, \Closure $val): void {
-        foreach ($player_ids as $pid) {
-            $this->init($pid, $val($pid));
-        }
-    }
-}
-<?php
-}
-$stats = statsFor("player", "float");
-if (count($stats) > 0) {
-?>
-enum FloatPlayerStats: string {
-<?php foreach ($stats as $name => $id) { ?>
-    case <?php echo $id ?> = "<?php echo $name ?>";
-<?php } ?>
-
-    public function add(int $player_id, float $delta): void {
-        Impl::$impl->incStat($delta, $this->value, $player_id);
-    }
-
-    public function set(int $player_id, float $val): void {
-        Impl::$impl->setStat($val, $this->value, $player_id);
-    }
-
-    public function get(int $player_id): float {
-        return Impl::$impl->getStat($this->value, $player_id);
-    }
-
-    public function init(int $player_id, float $val = 0.0): void {
-        Impl::$impl->initStat("player", $this->value, $val, $player_id);
-    }
-
-    /** @param int[] $player_ids */
-    public function initAll(array $player_ids, float $val = 0.0): void {
-        foreach ($player_ids as $pid) {
-            $this->init($pid, $val);
-        }
-    }
-
-    /**
-     * @param int[] $player_ids
-     * @param \Closure(int):float $val
-     */
-    public function initMap(array $player_ids, \Closure $val): void {
-        foreach ($player_ids as $pid) {
-            $this->init($pid, $val($pid));
-        }
+        return $this->impl->getStat($this->index, $player_id);
     }
 }
 
-<?php
-}
-$stats = statsFor("player", "bool");
-if (count($stats) > 0) {
-?>
-enum BoolPlayerStats: string {
-<?php foreach ($stats as $name => $id) { ?>
-    case <?php echo $id ?> = "<?php echo $name ?>";
-<?php } ?>
+class BoolPlayerStat {
+    function __construct(private mixed $impl, private string $index) { }
+
+    public function init(array $player_ids, bool $val = false): void {
+        foreach ($player_ids as $player_id) {
+            $this->impl->initStat("player", $this->index, $val, $player_id);
+        }
+    }
 
     public function set(int $player_id, bool $val): void {
-        Impl::$impl->setStat($val, $this->value, $player_id);
+        $this->impl->setStat($val, $this->index, $player_id);
     }
 
     public function get(int $player_id): bool {
-        return Impl::$impl->getStat($this->value, $player_id);
-    }
-
-    public function init(int $player_id, bool $val = false): void {
-        Impl::$impl->initStat("player", $this->value, $val, $player_id);
-    }
-
-    /** @param int[] $player_ids */
-    public function initAll(array $player_ids, bool $val = false): void {
-        foreach ($player_ids as $pid) {
-            $this->init($pid, $val);
-        }
-    }
-
-    /**
-     * @param int[] $player_ids
-     * @param \Closure(int):bool $val
-     */
-    public function initMap(array $player_ids, \Closure $val): void {
-        foreach ($player_ids as $pid) {
-            $this->init($pid, $val($pid));
-        }
+        return $this->impl->getStat($this->index, $player_id);
     }
 }
 
-<?php
+class FloatPlayerStat {
+    function __construct(private mixed $impl, private string $index) {}
+
+    public function init(array $player_ids, float $val = 0.0): void {
+        foreach ($player_ids as $player_id) {
+            $this->impl->initStat("player", $this->index, $val, $player_id);
+        }
+    }
+
+    public function add(int $player_id, float $delta): void {
+        $this->impl->incStat($delta, $this->index, $player_id);
+    }
+
+    public function set(int $player_id, float $val): void {
+        $this->impl->setStat($val, $this->index, $player_id);
+    }
+
+    public function get(int $player_id): float {
+        return $this->impl->getStat($this->index, $player_id);
+    }
 }
-$stats = statsFor("table", "int");
-if (count($stats) > 0) {
-?>
-enum IntTableStats: string {
-<?php foreach ($stats as $name => $id) { ?>
-    case <?php echo $id ?> = "<?php echo $name ?>";
-<?php } ?>
+
+class IntTableStat {
+    function __construct(private mixed $impl, private string $index) {}
+
+    public function init(int $val = 0): void {
+        $this->impl->initStat("table", $this->index, $val);
+    }
 
     public function inc(int $delta = 1): void {
-        Impl::$impl->incStat($delta, $this->value);
+        $this->impl->incStat($delta, $this->index);
     }
 
     public function set(int $val): void {
-        Impl::$impl->setStat($val, $this->value);
+        $this->impl->setStat($val, $this->index);
     }
 
     public function get(): int {
-        return Impl::$impl->getStat($this->value);
-    }
-
-    public function init(int $val = 0): void {
-        Impl::$impl->initStat("table", $this->value, $val);
+        return $this->impl->getStat($this->index);
     }
 }
 
-<?php
-}
-$stats = statsFor("table", "float");
-if (count($stats) > 0) {
-?>
-enum FloatTableStats: string {
-<?php foreach ($stats as $name => $id) { ?>
-    case <?php echo $id ?> = "<?php echo $name ?>";
-<?php } ?>
+class BoolTableStat {
+    function __construct(private mixed $impl, private string $index) {}
 
-    public function add(float $delta): void {
-        Impl::$impl->incStat($delta, $this->value);
+    public function init(bool $val = false): void {
+        $this->impl->initStat("table", $this->index, $val);
     }
-
-    public function set(float $val): void {
-        Impl::$impl->setStat($val, $this->value);
-    }
-
-    public function get(): float {
-        return Impl::$impl->getStat($this->value);
-    }
-
-    public function init(float $val = 0.0): void {
-        Impl::$impl->initStat("table", $this->value, $val);
-    }
-}
-
-<?php
-}
-$stats = statsFor("table", "bool");
-if (count($stats) > 0) {
-?>
-enum BoolTableStats: string {
-<?php foreach ($stats as $name => $id) { ?>
-    case <?php echo $id ?> = "<?php echo $name ?>";
-<?php } ?>
 
     public function set(bool $val): void {
-        Impl::$impl->setStat($val, $this->value);
+        $this->impl->setStat($val, $this->index);
     }
 
     public function get(): bool {
-        return Impl::$impl->getStat($this->value);
-    }
-
-    public function init(bool $val = false): void {
-        Impl::$impl->initStat("table", $this->value, $val);
+        return $this->impl->getStat($this->index);
     }
 }
-<?php
-}
-?>
 
-namespace Bga\Games\<?php echo $gamename ?>;
-use Bga\Games\<?php echo $gamename ?>\StatsGen\ {
-    IntPlayerStats,
-    BoolPlayerStats,
-    FloatPlayerStats,
-    IntTableStats,
-    BoolTableStats,
-    FloatTableStats,
-    Impl,
-};
+class FloatTableStat {
+    function __construct(private mixed $impl, private string $index) { }
+
+    public function init(float $val = 0.0): void {
+        $this->impl->initStat("table", $this->index, $val);
+    }
+
+    public function add(float $delta): void {
+        $this->impl->incStat($delta, $this->index);
+    }
+
+    public function set(float $val): void {
+        $this->impl->setStat($val, $this->index);
+    }
+
+    public function get(): float {
+        return $this->impl->getStat($this->index);
+    }
+}
+
+// namespace Bga\Games\<?php echo $gamename ?>;
+// use Bga\Games\<?php echo $gamename ?>\StatsGen\ {
+//     IntPlayerStat,
+//     BoolPlayerStat,
+//     FloatPlayerStat,
+//     IntTableStat,
+//     BoolTableStat,
+//     FloatTableStat,
+//     StatsImpl,
+// };
 
 class Stats {
-    // Player int stats
+
+    /** @param StatsImpl $impl */
+    public function __construct(private /* StatsImpl */ mixed $impl) {
+      // Player int stats
 <?php foreach (statsFor("player", "int") as $n => $id) { ?>
-    public const PLAYER_<?php echo $id ?> = IntPlayerStats::<?php echo $id ?>;
+        $this->PLAYER_<?php echo $id ?> = new IntPlayerStat($impl, "<?php echo $n ?>");
 <?php } ?>
 
     // Player float stats
 <?php foreach (statsFor("player", "float") as $n => $id) { ?>
-    public const PLAYER_<?php echo $id ?> = FloatPlayerStats::<?php echo $id ?>;
+        $this->PLAYER_<?php echo $id ?> = new FloatPlayerStat($impl, "<?php echo $n ?>");
 <?php } ?>
 
     // Player bool stats
 <?php foreach (statsFor("player", "bool") as $n => $id) { ?>
-    public const PLAYER_<?php echo $id ?> = BoolPlayerStats::<?php echo $id ?>;
+        $this->PLAYER_<?php echo $id ?> = new BoolPlayerStat($impl, "<?php echo $n ?>");
 <?php } ?>
 
     // Table int stats
 <?php foreach (statsFor("table", "int") as $n => $id) { ?>
-    public const TABLE_<?php echo $id ?> = IntTableStats::<?php echo $id ?>;
+        $this->TABLE_<?php echo $id ?> = new IntTableStat($impl, "<?php echo $n ?>");
 <?php } ?>
 
     // Table float stats
 <?php foreach (statsFor("table", "float") as $n => $id) { ?>
-    public const TABLE_<?php echo $id ?> = FloatTableStats::<?php echo $id ?>;
+        $this->TABLE_<?php echo $id ?> = new FloatTableStat($impl, "<?php echo $n ?>");
 <?php } ?>
 
     // Table bool stats
 <?php foreach (statsFor("table", "bool") as $n => $id) { ?>
-    public const TABLE_<?php echo $id ?> = BoolTableStats::<?php echo $id ?>;
+        $this->TABLE_<?php echo $id ?> = new BoolTableStat($impl, "<?php echo $n ?>");
 <?php } ?>
-
-    public static function init(mixed $the_impl): void {
-        Impl::$impl = $the_impl;
     }
 
-    /*
-     * Convenience method to initialize all stats to "zero".
-     */
     /** @param int[] $player_ids */
-    public static function initAll(array $player_ids): void {
+    public function initAll(array $player_ids): void {
 <?php foreach (statsFor("player", "int") as $n => $id) { ?>
-        self::PLAYER_<?php echo $id ?>->initAll($player_ids, 0);
+      $this->PLAYER_<?php echo $id ?>->init($player_ids);
 <?php } ?>
 <?php foreach (statsFor("player", "float") as $n => $id) { ?>
-        self::PLAYER_<?php echo $id ?>->initAll($player_ids, 0.0);
+      $this->PLAYER_<?php echo $id ?>->init($player_ids);
 <?php } ?>
 <?php foreach (statsFor("player", "bool") as $n => $id) { ?>
-        self::PLAYER_<?php echo $id ?>->initAll($player_ids, false);
+      $this->PLAYER_<?php echo $id ?>->init($player_ids);
 <?php } ?>
 <?php foreach (statsFor("table", "int") as $n => $id) { ?>
-        self::TABLE_<?php echo $id ?>->init(0);
+      $this->TABLE_<?php echo $id ?>->init();
 <?php } ?>
 <?php foreach (statsFor("table", "float") as $n => $id) { ?>
-        self::TABLE_<?php echo $id ?>->init(0.0);
+      $this->TABLE_<?php echo $id ?>->init();
 <?php } ?>
 <?php foreach (statsFor("table", "bool") as $n => $id) { ?>
-        self::TABLE_<?php echo $id ?>->init(false);
+      $this->TABLE_<?php echo $id ?>->init();
 <?php } ?>
     }
+
+    // Player int stats
+<?php foreach (statsFor("player", "int") as $n => $id) { ?>
+    public readonly IntPlayerStat $PLAYER_<?php echo $id ?>;
+<?php } ?>
+
+    // Player float stats
+<?php foreach (statsFor("player", "float") as $n => $id) { ?>
+    public readonly FloatPlayerStat $PLAYER_<?php echo $id ?>;
+<?php } ?>
+
+    // Player bool stats
+<?php foreach (statsFor("player", "bool") as $n => $id) { ?>
+    public readonly BoolPlayerStat $PLAYER_<?php echo $id ?>;
+<?php } ?>
+
+<?php foreach (statsFor("table", "int") as $n => $id) { ?>
+    public readonly IntTableStat $TABLE_<?php echo $id ?>;
+<?php } ?>
+
+    // Table float stats
+<?php foreach (statsFor("table", "float") as $n => $id) { ?>
+    public readonly FloatTableStat $TABLE_<?php echo $id ?>;
+<?php } ?>
+
+    // Table bool stats
+<?php foreach (statsFor("table", "bool") as $n => $id) { ?>
+    public readonly BoolTableStat $TABLE_<?php echo $id ?>;
+<?php } ?>
 }
