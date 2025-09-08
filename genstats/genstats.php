@@ -114,6 +114,11 @@ function statsFor(string $t_or_p, string $type): array {
 echo "<?";
 echo "php\n";
 ?>
+/**
+ * DO NOT EDIT
+ *
+ * THIS FILE WAS GENERATED FROM stats.json by bgautil/genstats.php
+ */
 declare(strict_types=1);
 
 namespace Bga\Games\<?php echo $gamename ?>;
