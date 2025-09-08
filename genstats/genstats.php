@@ -131,7 +131,7 @@ interface StatsImpl {
 };
 
 interface Stat {
-    public string $index { get; }
+    //  public string $index { get; }
 }
 
 class IntPlayerStat implements Stat {
