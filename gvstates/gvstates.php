@@ -7,8 +7,10 @@
  *
  *   php gvstates.php /path/to/states.inc.php
  *
- * emits the generated dotfile to stdout. You can omit the states file
- * and it will look in the current directory for `states.inc.php`
+ * emits the generated dotfile to stdout. If the states file has implicit
+ * dependencies, you can specify them in order before the states file:
+ *
+ *   php gvstates.php include1.php include2.php states.inc.php
  *
  * A fuller example including conversion to image:
  *
