@@ -135,7 +135,7 @@ function node(int $id,GameState $state): string {
 }
 
 function edge(GameState $state, string $label, GameState $dest): string {
-    return sprintf("%s -> %s [label=\"%s\"];\n", $state->name, $dest->name, $label);
+    return sprintf("%s -> %s [fontname=Arial,xlabel=\"%s\"];\n", $state->name, $dest->name, $label);
 }
 
 /** @param GameState[] $states */
