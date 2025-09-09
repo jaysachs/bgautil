@@ -143,6 +143,12 @@ class IntPlayerStat implements Stat {
         }
     }
 
+    public function initMap(array $player_ids, \Closure $val): void {
+        foreach ($player_ids as $player_id) {
+            $this->impl->initStat("player", $this->index, $val($player_id), $player_id);
+        }
+    }
+
     public function inc(int $player_id, int $delta = 1): void {
         $this->impl->incStat($delta, $this->index, $player_id);
     }
@@ -172,6 +178,12 @@ class BoolPlayerStat implements Stat {
     public function get(int $player_id): bool {
         return $this->impl->getStat($this->index, $player_id);
     }
+
+    public function initMap(array $player_ids, \Closure $val): void {
+        foreach ($player_ids as $player_id) {
+            $this->impl->initStat("player", $this->index, $val($player_id), $player_id);
+        }
+    }
 }
 
 class FloatPlayerStat implements Stat {
@@ -193,6 +205,12 @@ class FloatPlayerStat implements Stat {
 
     public function get(int $player_id): float {
         return $this->impl->getStat($this->index, $player_id);
+    }
+
+    public function initMap(array $player_ids, \Closure $val): void {
+        foreach ($player_ids as $player_id) {
+            $this->impl->initStat("player", $this->index, $val($player_id), $player_id);
+        }
     }
 }
 
