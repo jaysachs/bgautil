@@ -20,6 +20,8 @@
 namespace Bga\GameFramework {
 
 enum StateType: string {
+    case MULTIPLE_ACTIVE_PLAYER = "multipleactiveplayer";
+    case PRIVATE = "private";
     case ACTIVE_PLAYER = "activeplayer";
     case GAME = "game";
     case SYSTEM = "system";
@@ -107,13 +109,29 @@ use Bga\GameFramework\GameState;
 use Bga\GameFramework\GameStateBuilder;
 use Bga\GameFramework\StateType;
 
-function node(GameState $state): string {
+function node(int $id,GameState $state): string {
+    if ($id == 1) {
+        return "";
+    }
+    if ($id == 99) {
+        return "";
+    }
     $shape = match ($state->type) {
-        StateType::ACTIVE_PLAYER => 'box',
-        StateType::GAME => 'ellipse',
-        StateType::SYSTEM => 'doublecircle'
+        StateType::ACTIVE_PLAYER => 'parallelogram',
+        StateType::MULTIPLE_ACTIVE_PLAYER => 'doublebox',
+        StateType::PRIVATE => 'trapezium',
+        StateType::GAME => 'box',
+        StateType::SYSTEM => ($state->name == 'START' ? 'invtriangle' : 'octagon'),
     };
-    return sprintf("%s [shape=%s,label=<<b>%s</b><br/><i>args</i>:%s<br align=\"left\"/><i>act</i>:%s<br align=\"left\"/>>];\n", $state->name, $shape, $state->name, $state->args, $state->action);
+    $label = sprintf("<table border=\"0\"><tr><td colspan=\"2\"><b>%s</b></td></tr>", $state->name);
+    if ($state->args != "") {
+        $label .= sprintf("<tr><td><i>args</i></td><td>%s</td></tr>", $state->args);
+    }
+    if ($state->action != "") {
+        $label .= sprintf("<tr><td><i>act</i></td><td>%s</td></tr>", $state->action);
+    }
+    $label .= "</table>";
+    return sprintf("%s [fontname=Arial,shape=%s,label=<%s>];\n", $state->name, $shape, $label);
 }
 
 function edge(GameState $state, string $label, GameState $dest): string {
@@ -123,11 +141,21 @@ function edge(GameState $state, string $label, GameState $dest): string {
 /** @param GameState[] $states */
 function generateGraphViz(array $states): void { ?>
 digraph {
+    rankdir="TB"
+    subgraph {
+        rank=source
+        START [fontname=Arial,shape=invtriangle]
+    }
+    subgraph {
+        rank=sink
+        END [fontname=Arial,shape=octagon]
+    }
 <?php
     $states[1] = GameStateBuilder::create()->name('START')->transitions(["" => 2])->type(StateType::SYSTEM,)->build();
     $states[99] = GameStateBuilder::create()->name('END')->transitions([])->type(StateType::SYSTEM,)->build();
+
     foreach ($states as $id => $state) {
-        echo node($state);
+        echo node($id, $state);
         foreach ($state->transitions as $label => $destid) {
             echo edge($state, $label, $states[$destid]);
         }
