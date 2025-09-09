@@ -97,7 +97,7 @@ use Bga\GameFramework\StateType;
 
 function clienttranslate(string $s): string { return $s; }
 
-const EDGE_ATTRS = "fontname=Arial,decorate=true,";
+const EDGE_ATTRS = "fontname=Arial,decorate=false,";
 
 const NODE_ATTRS = "fontname=Arial,";
 
