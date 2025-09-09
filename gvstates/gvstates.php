@@ -92,20 +92,25 @@ namespace {
 use Bga\GameFramework\GameStateBuilder;
 use Bga\GameFramework\StateType;
 
+
+function clienttranslate(string $s): string { return $s; }
+
+const EDGE_ATTRS = "fontname=Arial,decorate=true,";
+
+const NODE_ATTRS = "fontname=Arial,";
+
 function node(int $id, array $state): string {
-    if ($id == 1) {
-        return "";
-    }
-    if ($id == 99) {
-        return "";
-    }
     $shape = match ($state["type"]) {
         StateType::ACTIVE_PLAYER->value => 'parallelogram',
         StateType::MULTIPLE_ACTIVE_PLAYER->value => 'hexagon',
         StateType::PRIVATE->value => 'trapezium',
         StateType::GAME->value => 'box',
-        StateType::SYSTEM->value => ($state["name"] == 'START' ? 'invtriangle' : 'octagon'),
+        StateType::SYSTEM->value => match($id) {
+            1 => 'invtriangle',
+            99 => 'octagon',
+        }
     };
+
     $label = sprintf("<table border=\"0\"><tr><td colspan=\"2\"><b>%s</b></td></tr>", $state["name"]);
     if (isset($state["args"])) {
         $label .= sprintf("<tr><td><i>args</i></td><td><font face=\"monospace\">%s</font></td></tr>", $state["args"]);
@@ -114,25 +119,29 @@ function node(int $id, array $state): string {
         $label .= sprintf("<tr><td><i>act</i></td><td><font face=\"monospace\">%s</font></td></tr>", $state["action"]);
     }
     $label .= "</table>";
-    return sprintf("%s [fontname=Arial,shape=%s,label=<%s>];\n", $state["name"], $shape, $label);
+    return sprintf("%s [%sshape=%s,label=<%s>];\n", $state["name"], NODE_ATTRS, $shape, $label);
 }
 
 function edge(array $state, string $label, array $dest): string {
-    return sprintf("%s -> %s [fontname=Arial,decorate=true,label=\"%s\"];\n", $state["name"], $dest["name"], $label);
+    return sprintf("%s -> %s [%slabel=\"%s\"];\n", $state["name"], $dest["name"], EDGE_ATTRS, $label);
+}
+
+function edges(int $id, array $states) {
+    $state = $states[$id];
+    if (isset($state["transitions"])) {
+        foreach ($state["transitions"] as $label => $destid) {
+            echo edge($state, $label, $states[$destid]);
+        }
+    }
+}
+
+function doState(int $id, array $states) {
+    echo node($id, $states[$id]);
+    edges($id, $states);
 }
 
 /** @param GameState[] $states */
 function generateGraphViz(array $states): void { ?>
-digraph {
-    rankdir="TB"
-    subgraph {
-        rank=source
-        START [fontname=Arial,shape=invtriangle]
-    }
-    subgraph {
-        rank=sink
-        END [fontname=Arial,shape=octagon]
-    }
 <?php
     if (!isset($states[1])) {
         $states[1] = GameStateBuilder::create()->name('START')->transitions(["" => 2])->type(StateType::SYSTEM,)->build();
@@ -140,13 +149,23 @@ digraph {
     if (!isset($states[99])) {
         $states[99] = GameStateBuilder::create()->name('END')->transitions([])->type(StateType::SYSTEM,)->build();
     }
-
+?>
+digraph {
+    rankdir="TB"
+    subgraph {
+        rank=source
+        <?php echo node(1, $states[1]); ?>
+    }
+    subgraph {
+        rank=sink
+        <?php echo node(99, $states[99]); ?>
+    }
+<?php
     foreach ($states as $id => $state) {
-        echo node($id, $state);
-        if (isset($state["transitions"])) {
-            foreach ($state["transitions"] as $label => $destid) {
-                echo edge($state, $label, $states[$destid]);
-            }
+        if ($id == 1 || $id == 99) {
+            edges($id, $states);
+        } else {
+            doState($id, $states);
         }
     }
 
@@ -155,19 +174,16 @@ digraph {
 <?php
 }
 
-
-function clienttranslate(string $s): string { return $s; }
-
 $file = "states.inc.php";
-if (count($argv) == 2) {
-    $file = $argv[1];
-} else if (count($argv) > 2) {
-    fwrite(STDERR, "Usage: php $argv[0] [ statesfilename ]\n");
+if (count($argv) < 2) {
+    fwrite(STDERR, "Usage: php $argv[0] [ includefile ... ] statesfile\n");
     exit(1);
 }
-if (!include($file)) {
-    fwrite(STDERR, "Unable to read $file\n");
-    exit(1);
+foreach (array_slice($argv, 1) as $_ => $file) {
+  if (!include($file)) {
+      fwrite(STDERR, "Unable to read $file\n");
+      exit(1);
+  }
 }
 
 generateGraphViz($machinestates);
