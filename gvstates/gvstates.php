@@ -101,7 +101,7 @@ const EDGE_ATTRS = "fontname=Arial,decorate=false,";
 
 const NODE_ATTRS = "fontname=Arial,";
 
-function node(int $id, array $state): string {
+function node(int $id, array $state): void {
     $shape = match ($state["type"]) {
         StateType::ACTIVE_PLAYER->value => 'parallelogram',
         StateType::MULTIPLE_ACTIVE_PLAYER->value => 'hexagon',
@@ -121,24 +121,24 @@ function node(int $id, array $state): string {
         $label .= sprintf("<tr><td><i>act</i></td><td><font face=\"monospace\">%s</font></td></tr>", $state["action"]);
     }
     $label .= "</table>";
-    return sprintf("%s [%sshape=%s,label=<%s>];\n", $state["name"], NODE_ATTRS, $shape, $label);
+    echo sprintf("    %s [%sshape=%s,label=<%s>];\n", $state["name"], NODE_ATTRS, $shape, $label);
 }
 
-function edge(array $state, string $label, array $dest): string {
-    return sprintf("%s -> %s [%slabel=\"%s\"];\n", $state["name"], $dest["name"], EDGE_ATTRS, $label);
+function edge(array $state, string $label, array $dest): void {
+    echo sprintf("    %s -> %s [%slabel=\"%s\"];\n", $state["name"], $dest["name"], EDGE_ATTRS, $label);
 }
 
 function edges(int $id, array $states) {
     $state = $states[$id];
     if (isset($state["transitions"])) {
         foreach ($state["transitions"] as $label => $destid) {
-            echo edge($state, $label, $states[$destid]);
+            edge($state, $label, $states[$destid]);
         }
     }
 }
 
 function doState(int $id, array $states) {
-    echo node($id, $states[$id]);
+    node($id, $states[$id]);
     edges($id, $states);
 }
 
@@ -156,11 +156,11 @@ digraph {
     rankdir="TB"
     subgraph {
         rank=source
-        <?php echo node(1, $states[1]); ?>
+        <?php node(1, $states[1]); ?>
     }
     subgraph {
         rank=sink
-        <?php echo node(99, $states[99]); ?>
+        <?php node(99, $states[99]); ?>
     }
 <?php
     foreach ($states as $id => $state) {
