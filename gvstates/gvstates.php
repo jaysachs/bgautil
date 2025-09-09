@@ -24,79 +24,63 @@ enum StateType: string {
     case PRIVATE = "private";
     case ACTIVE_PLAYER = "activeplayer";
     case GAME = "game";
-    case SYSTEM = "system";
-}
-
-class GameState {
-    public function __construct() { }
-
-    public string $name;
-    public StateType $type;
-    public ?string $description = null;
-    public ?string $descriptionmyturn = null;
-    public string $action = "";
-    public string $args = "";
-    /** @var array<string,int> */
-    public array $transitions = [];
-    /** @var array<string> */
-    public array $possibleactions = [];
-    public bool $updateGameProgression = false;
+    case SYSTEM = "manager";
 }
 
 class GameStateBuilder {
 
-    private function __construct(private GameState $gamestate) {}
+    private function __construct(private array $gamestate) {}
 
     public static function create(): GameStateBuilder {
-        return new GameStateBuilder(new GameState());
+        return new GameStateBuilder([]);
     }
 
     public function name(string $val): GameStateBuilder {
-        $this->gamestate->name = $val;
+        $this->gamestate["name"] = $val;
         return $this;
     }
 
     public function type(StateType $val): GameStateBuilder {
-        $this->gamestate->type = $val;
+        $this->gamestate["type"] = $val->value;
         return $this;
     }
 
     public function description(string $val): GameStateBuilder {
-        $this->gamestate->description = $val;
+        $this->gamestate["description"] = $val;
         return $this;
     }
 
     public function descriptionmyturn(string $val): GameStateBuilder {
-        $this->gamestate->descriptionmyturn = $val;
+        $this->gamestate["descriptionmyturn"] = $val;
         return $this;
     }
 
     public function action(string $val): GameStateBuilder {
-        $this->gamestate->action = $val;
+        $this->gamestate["action"] = $val;
         return $this;
     }
 
     public function args(string $val): GameStateBuilder {
-        $this->gamestate->args = $val;
+        $this->gamestate["args"] = $val;
         return $this;
     }
 
     public function updateGameProgression(bool $val): GameStateBuilder {
-        $this->gamestate->updateGameProgression = $val;
+        $this->gamestate["updateGameProgression"] = $val;
         return $this;
     }
 
     public function transitions(array $val): GameStateBuilder {
-        $this->gamestate->transitions = $val;
+        $this->gamestate["transitions"] = $val;
         return $this;
     }
 
     public function possibleactions(array $val): GameStateBuilder {
-        $this->gamestate->possibleactions = $val;
+        $this->gamestate["possibleactions"] = $val;
         return $this;
     }
 
-    public function build(): GameState {
+    public function build(): array {
         return $this->gamestate;
     }
 }
@@ -105,37 +89,36 @@ class GameStateBuilder {
 
 namespace {
 
-use Bga\GameFramework\GameState;
 use Bga\GameFramework\GameStateBuilder;
 use Bga\GameFramework\StateType;
 
-function node(int $id,GameState $state): string {
+function node(int $id, array $state): string {
     if ($id == 1) {
         return "";
     }
     if ($id == 99) {
         return "";
     }
-    $shape = match ($state->type) {
-        StateType::ACTIVE_PLAYER => 'parallelogram',
-        StateType::MULTIPLE_ACTIVE_PLAYER => 'doublebox',
-        StateType::PRIVATE => 'trapezium',
-        StateType::GAME => 'box',
-        StateType::SYSTEM => ($state->name == 'START' ? 'invtriangle' : 'octagon'),
+    $shape = match ($state["type"]) {
+        StateType::ACTIVE_PLAYER->value => 'parallelogram',
+        StateType::MULTIPLE_ACTIVE_PLAYER->value => 'hexagon',
+        StateType::PRIVATE->value => 'trapezium',
+        StateType::GAME->value => 'box',
+        StateType::SYSTEM->value => ($state["name"] == 'START' ? 'invtriangle' : 'octagon'),
     };
-    $label = sprintf("<table border=\"0\"><tr><td colspan=\"2\"><b>%s</b></td></tr>", $state->name);
-    if ($state->args != "") {
-        $label .= sprintf("<tr><td><i>args</i></td><td><font face=\"monospace\">%s</font></td></tr>", $state->args);
+    $label = sprintf("<table border=\"0\"><tr><td colspan=\"2\"><b>%s</b></td></tr>", $state["name"]);
+    if (isset($state["args"])) {
+        $label .= sprintf("<tr><td><i>args</i></td><td><font face=\"monospace\">%s</font></td></tr>", $state["args"]);
     }
-    if ($state->action != "") {
-        $label .= sprintf("<tr><td><i>act</i></td><td><font face=\"monospace\">%s</font></td></tr>", $state->action);
+    if (isset($state["action"])) {
+        $label .= sprintf("<tr><td><i>act</i></td><td><font face=\"monospace\">%s</font></td></tr>", $state["action"]);
     }
     $label .= "</table>";
-    return sprintf("%s [fontname=Arial,shape=%s,label=<%s>];\n", $state->name, $shape, $label);
+    return sprintf("%s [fontname=Arial,shape=%s,label=<%s>];\n", $state["name"], $shape, $label);
 }
 
-function edge(GameState $state, string $label, GameState $dest): string {
-    return sprintf("%s -> %s [fontname=Arial,decorate=true,label=\"%s\"];\n", $state->name, $dest->name, $label);
+function edge(array $state, string $label, array $dest): string {
+    return sprintf("%s -> %s [fontname=Arial,decorate=true,label=\"%s\"];\n", $state["name"], $dest["name"], $label);
 }
 
 /** @param GameState[] $states */
@@ -151,13 +134,19 @@ digraph {
         END [fontname=Arial,shape=octagon]
     }
 <?php
-    $states[1] = GameStateBuilder::create()->name('START')->transitions(["" => 2])->type(StateType::SYSTEM,)->build();
-    $states[99] = GameStateBuilder::create()->name('END')->transitions([])->type(StateType::SYSTEM,)->build();
+    if (!isset($states[1])) {
+        $states[1] = GameStateBuilder::create()->name('START')->transitions(["" => 2])->type(StateType::SYSTEM,)->build();
+    }
+    if (!isset($states[99])) {
+        $states[99] = GameStateBuilder::create()->name('END')->transitions([])->type(StateType::SYSTEM,)->build();
+    }
 
     foreach ($states as $id => $state) {
         echo node($id, $state);
-        foreach ($state->transitions as $label => $destid) {
-            echo edge($state, $label, $states[$destid]);
+        if (isset($state["transitions"])) {
+            foreach ($state["transitions"] as $label => $destid) {
+                echo edge($state, $label, $states[$destid]);
+            }
         }
     }
 
