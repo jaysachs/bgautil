@@ -125,17 +125,17 @@ function node(int $id,GameState $state): string {
     };
     $label = sprintf("<table border=\"0\"><tr><td colspan=\"2\"><b>%s</b></td></tr>", $state->name);
     if ($state->args != "") {
-        $label .= sprintf("<tr><td><i>args</i></td><td>%s</td></tr>", $state->args);
+        $label .= sprintf("<tr><td><i>args</i></td><td><font face=\"monospace\">%s</font></td></tr>", $state->args);
     }
     if ($state->action != "") {
-        $label .= sprintf("<tr><td><i>act</i></td><td>%s</td></tr>", $state->action);
+        $label .= sprintf("<tr><td><i>act</i></td><td><font face=\"monospace\">%s</font></td></tr>", $state->action);
     }
     $label .= "</table>";
     return sprintf("%s [fontname=Arial,shape=%s,label=<%s>];\n", $state->name, $shape, $label);
 }
 
 function edge(GameState $state, string $label, GameState $dest): string {
-    return sprintf("%s -> %s [fontname=Arial,xlabel=\"%s\"];\n", $state->name, $dest->name, $label);
+    return sprintf("%s -> %s [fontname=Arial,decorate=true,label=\"%s\"];\n", $state->name, $dest->name, $label);
 }
 
 /** @param GameState[] $states */
