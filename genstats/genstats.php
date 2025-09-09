@@ -137,12 +137,14 @@ interface Stat {
 class IntPlayerStat implements Stat {
     function __construct(private mixed $impl, public readonly string $index) {}
 
+    /** @param int[] $player_ids */
     public function init(array $player_ids, int $val = 0): void {
         foreach ($player_ids as $player_id) {
             $this->impl->initStat("player", $this->index, $val, $player_id);
         }
     }
 
+    /** @param int[] $player_ids */
     public function initMap(array $player_ids, \Closure $val): void {
         foreach ($player_ids as $player_id) {
             $this->impl->initStat("player", $this->index, $val($player_id), $player_id);
@@ -165,6 +167,7 @@ class IntPlayerStat implements Stat {
 class BoolPlayerStat implements Stat {
     function __construct(private mixed $impl, public readonly string $index) { }
 
+    /** @param int[] $player_ids */
     public function init(array $player_ids, bool $val = false): void {
         foreach ($player_ids as $player_id) {
             $this->impl->initStat("player", $this->index, $val, $player_id);
@@ -179,6 +182,7 @@ class BoolPlayerStat implements Stat {
         return $this->impl->getStat($this->index, $player_id);
     }
 
+    /** @param int[] $player_ids */
     public function initMap(array $player_ids, \Closure $val): void {
         foreach ($player_ids as $player_id) {
             $this->impl->initStat("player", $this->index, $val($player_id), $player_id);
@@ -189,6 +193,7 @@ class BoolPlayerStat implements Stat {
 class FloatPlayerStat implements Stat {
     function __construct(private mixed $impl, public readonly string $index) {}
 
+    /** @param int[] $player_ids */
     public function init(array $player_ids, float $val = 0.0): void {
         foreach ($player_ids as $player_id) {
             $this->impl->initStat("player", $this->index, $val, $player_id);
@@ -207,6 +212,7 @@ class FloatPlayerStat implements Stat {
         return $this->impl->getStat($this->index, $player_id);
     }
 
+    /** @param int[] $player_ids */
     public function initMap(array $player_ids, \Closure $val): void {
         foreach ($player_ids as $player_id) {
             $this->impl->initStat("player", $this->index, $val($player_id), $player_id);

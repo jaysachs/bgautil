@@ -26,7 +26,7 @@ enum StateType: string {
     case PRIVATE = "private";
     case ACTIVE_PLAYER = "activeplayer";
     case GAME = "game";
-    case SYSTEM = "manager";
+    case MANAGER = "manager";
 }
 
 class GameStateBuilder {
@@ -107,7 +107,7 @@ function node(int $id, array $state): void {
         StateType::MULTIPLE_ACTIVE_PLAYER->value => 'hexagon',
         StateType::PRIVATE->value => 'trapezium',
         StateType::GAME->value => 'box',
-        StateType::SYSTEM->value => match($id) {
+        StateType::MANAGER->value => match($id) {
             1 => 'invtriangle',
             99 => 'octagon',
         }
@@ -146,10 +146,10 @@ function doState(int $id, array $states) {
 function generateGraphViz(array $states): void { ?>
 <?php
     if (!isset($states[1])) {
-        $states[1] = GameStateBuilder::create()->name('START')->transitions(["" => 2])->type(StateType::SYSTEM,)->build();
+        $states[1] = GameStateBuilder::create()->name('START')->transitions(["" => 2])->type(StateType::MANAGER,)->build();
     }
     if (!isset($states[99])) {
-        $states[99] = GameStateBuilder::create()->name('END')->transitions([])->type(StateType::SYSTEM,)->build();
+        $states[99] = GameStateBuilder::create()->name('END')->transitions([])->type(StateType::MANAGER,)->build();
     }
 ?>
 digraph {
