@@ -146,10 +146,10 @@ function doState(int $id, array $states) {
 function generateGraphViz(array $states): void { ?>
 <?php
     if (!isset($states[1])) {
-        $states[1] = GameStateBuilder::create()->name('START')->transitions(["" => 2])->type(StateType::MANAGER,)->build();
+        $states[1] = GameStateBuilder::create()->name('START')->transitions(["" => 2])->type(StateType::MANAGER)->build();
     }
     if (!isset($states[99])) {
-        $states[99] = GameStateBuilder::create()->name('END')->transitions([])->type(StateType::MANAGER,)->build();
+        $states[99] = GameStateBuilder::create()->name('END')->transitions([])->type(StateType::MANAGER)->build();
     }
 ?>
 digraph {
