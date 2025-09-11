@@ -112,6 +112,13 @@ function node(int $id, array $state): void {
             99 => 'octagon',
         }
     };
+    $fillcolor = match ($state["type"]) {
+        StateType::ACTIVE_PLAYER->value => '#aaddff',
+        StateType::MULTIPLE_ACTIVE_PLAYER->value => '8888ff',
+        StateType::PRIVATE->value => '#3333ff',
+        StateType::GAME->value => '#bbffbb',
+        StateType::MANAGER->value => '#ffdddd',
+    };
 
     $label = sprintf("<table border=\"0\"><tr><td colspan=\"2\"><b>%s</b></td></tr>", $state["name"]);
     if (isset($state["args"])) {
@@ -121,7 +128,7 @@ function node(int $id, array $state): void {
         $label .= sprintf("<tr><td><i>act</i></td><td><font face=\"monospace\">%s</font></td></tr>", $state["action"]);
     }
     $label .= "</table>";
-    echo sprintf("    %s [%sshape=%s,label=<%s>];\n", $state["name"], NODE_ATTRS, $shape, $label);
+    echo sprintf("    %s [%sshape=%s,label=<%s>,style=filled,color=\"%s\",fillcolor=\"%s\"];\n", $state["name"], NODE_ATTRS, $shape, $label, "black", $fillcolor);
 }
 
 function edge(array $state, string $label, array $dest): void {
