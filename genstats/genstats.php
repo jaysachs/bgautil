@@ -130,12 +130,24 @@ interface StatsImpl {
     public function initStat(string $type, string $name, mixed $index, int $player_id = 0): void;
 };
 
-interface Stat {
+class Stat {
     //  public string $index { get; }
+    private static array $allStats = [];
+
+    protected static function addStat(string $name, Stat $stat): void {
+        assert(!isset($allStats[$name]), "duplicate Stat name {$name}");
+        Stat::$allStats[$name] = $stat;
+    }
+
+    public static function lookup(string $name): ?Stat {
+        return @ Stat::$allStats[$name];
+    }
 }
 
-class IntPlayerStat implements Stat {
-    function __construct(private mixed $impl, public readonly string $index) {}
+class IntPlayerStat extends Stat {
+    function __construct(private mixed $impl, public readonly string $index) {
+        Stat::addStat($index, $this);
+    }
 
     /** @param int[] $player_ids */
     public function init(array $player_ids, int $val = 0): void {
@@ -164,8 +176,10 @@ class IntPlayerStat implements Stat {
     }
 }
 
-class BoolPlayerStat implements Stat {
-    function __construct(private mixed $impl, public readonly string $index) { }
+class BoolPlayerStat extends Stat {
+    function __construct(private mixed $impl, public readonly string $index) {
+        Stat::addStat($index, $this);
+    }
 
     /** @param int[] $player_ids */
     public function init(array $player_ids, bool $val = false): void {
@@ -190,8 +204,10 @@ class BoolPlayerStat implements Stat {
     }
 }
 
-class FloatPlayerStat implements Stat {
-    function __construct(private mixed $impl, public readonly string $index) {}
+class FloatPlayerStat extends Stat {
+    function __construct(private mixed $impl, public readonly string $index) {
+        Stat::addStat($index, $this);
+    }
 
     /** @param int[] $player_ids */
     public function init(array $player_ids, float $val = 0.0): void {
@@ -220,8 +236,10 @@ class FloatPlayerStat implements Stat {
     }
 }
 
-class IntTableStat implements Stat {
-    function __construct(private mixed $impl, public readonly string $index) {}
+class IntTableStat extends Stat {
+    function __construct(private mixed $impl, public readonly string $index) {
+        Stat::addStat($index, $this);
+    }
 
     public function init(int $val = 0): void {
         $this->impl->initStat("table", $this->index, $val);
@@ -240,8 +258,10 @@ class IntTableStat implements Stat {
     }
 }
 
-class BoolTableStat implements Stat {
-    function __construct(private mixed $impl, public readonly string $index) {}
+class BoolTableStat extends Stat {
+    function __construct(private mixed $impl, public readonly string $index) {
+        Stat::addStat($index, $this);
+    }
 
     public function init(bool $val = false): void {
         $this->impl->initStat("table", $this->index, $val);
@@ -256,8 +276,10 @@ class BoolTableStat implements Stat {
     }
 }
 
-class FloatTableStat implements Stat {
-    function __construct(private mixed $impl, public readonly string $index) { }
+class FloatTableStat extends Stat {
+    function __construct(private mixed $impl, public readonly string $index) {
+        Stat::addStat($index, $this);
+    }
 
     public function init(float $val = 0.0): void {
         $this->impl->initStat("table", $this->index, $val);
@@ -276,14 +298,40 @@ class FloatTableStat implements Stat {
     }
 }
 
+class GameStatsImpl implements StatsImpl {
+    public function __construct(private \Bga\GameFramework\Table $game) {}
+
+    public function incStat(mixed $delta, string $name, int $player_id = 0) : void {
+        $this->game->incStat($delta, $name, $player_id ?? null);
+    }
+
+    public function setStat(mixed $val, string $name, int $player_id = 0) : void {
+        $this->game->setStat($val, $name, $player_id ?? null);
+    }
+
+    public function getStat(string $name, int $player_id = 0): mixed {
+        $this->game->getStat($name, $player_id ?? null);
+    }
+
+    public function initStat(string $type, string $name, mixed $index, int $player_id = 0): void {
+        $this->game->initStat($type, $name, $index, $player_id ?? null);
+    }
+}
+
 class Stats {
 
+    public static function createForGame(\Bga\GameFramework\Table $game): Stats {
+        return new GameStatsImpl($game);
+    }
+
     /** @param StatsImpl $impl */
-    public function __construct(private /* StatsImpl */ mixed $impl) {
+    public function __construct(private StatsImpl $impl) {
 <?php foreach (["player", "table"] as $scope) {
           foreach (["int", "float", "bool"] as $type) {
-              foreach (statsFor($scope, $type) as $n => $id) { ?>
-        $this-><?php echo strtoupper($scope) ?>_<?php echo $id ?> = new <?php echo ucfirst($type) . ucfirst($scope) ?>Stat($impl, "<?php echo $n ?>");
+              foreach (statsFor($scope, $type) as $n => $id) {
+                  $typename =  ucfirst($type) . ucfirst($scope);
+                  $name = strtoupper($scope) . "_" . $id; ?>
+        $this-><?php echo  $name ?> = new <?php echo  $typename ?>Stat($impl, "<?php echo $n ?>");
 <?php         }
           }
       } ?>
@@ -293,8 +341,10 @@ class Stats {
     public function initAll(array $player_ids): void {
 <?php foreach (["player", "table"] as $scope) {
           foreach (["int", "float", "bool"] as $type) {
-              foreach (statsFor($scope, $type) as $n => $id) { ?>
-      $this-><?php echo strtoupper($scope) ?>_<?php echo $id ?>->init(<?php if ($scope == "player") { ?>$player_ids<?php } ?>);
+              foreach (statsFor($scope, $type) as $n => $id) {
+                  $typename =  ucfirst($type) . ucfirst($scope);
+                  $name = strtoupper($scope) . "_" . $id; ?>
+      $this-><?php echo $name ?>->init(<?php if ($scope == "player") { ?>$player_ids<?php } ?>);
 <?php         }
           }
       } ?>
@@ -302,8 +352,10 @@ class Stats {
 
 <?php foreach (["player", "table"] as $scope) {
           foreach (["int", "float", "bool"] as $type) {
-              foreach (statsFor($scope, $type) as $n => $id) { ?>
-    public readonly <?php echo ucfirst($type) . ucfirst($scope) ?>Stat $<?php echo strtoupper($scope) ?>_<?php echo $id ?>;
+              foreach (statsFor($scope, $type) as $n => $id) {
+                  $typename =  ucfirst($type) . ucfirst($scope);
+                  $name = strtoupper($scope) . "_" . $id; ?>
+    public readonly <?php echo $typename ?>Stat $<?php echo $name ?>;
 <?php         }
           }
       } ?>
