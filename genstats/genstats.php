@@ -374,7 +374,7 @@ class RecordingStatsImpl implements StatsImpl
         // Reflect all the operations going on here. Not optimized, should be rarely used.
         foreach ($this->operations as $_ => $op) {
             if ($op->player_id == $player_id) {
-                switch ($op->op) {
+                switch ($op->op_type) {
                     case OpType::INC:
                         $val += $op->value; break;
                     case OpType::SET:
@@ -401,19 +401,10 @@ class Stats {
                   $typename =  ucfirst($type) . ucfirst($scope);
                   $name = strtoupper($scope) . "_" . $id; ?>
         $this-><?php echo  $name ?> = new <?php echo  $typename ?>Stat($impl, "<?php echo $n ?>");
-        $this->allStats["<?php echo $n ?>"] = $this-><?php echo $name ?>;
 <?php         }
           }
       } ?>
     }
-
-    /** @var array<int, Stat> */
-    private array $allStats = [];
-
-    public function lookup(string $name): ?Stat {
-        return @ $this->allStats[$name];
-    }
-
 
     /** @param int[] $player_ids */
     public function initAll(array $player_ids): void {
