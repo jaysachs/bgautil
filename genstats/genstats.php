@@ -313,8 +313,7 @@ class StatOp {
         public readonly OpType $op_type,
         public readonly string $name,
         public readonly ?int $player_id,
-        public readonly mixed $value,
-        public readonly mixed $orig
+        public readonly mixed $value
     ) {}
 
     /** @param array<int, StatOp> $statOps */
@@ -356,12 +355,12 @@ class RecordingStatsImpl implements StatsImpl
 
     #[\Override]
     public function incStat(mixed $delta, string $name, ?int $player_id = null) : void {
-        $this->operations[] = new StatOp(OpType::INC, $name, $player_id, $delta, $this->impl->getStat($name, $player_id));
+        $this->operations[] = new StatOp(OpType::INC, $name, $player_id, $delta);
     }
 
     #[\Override]
     public function setStat(mixed $val, string $name, ?int $player_id = null) : void {
-        $this->operations[] = new StatOp(OpType::SET, $name, $player_id, $val, $this->impl->getStat($name, $player_id));
+        $this->operations[] = new StatOp(OpType::SET, $name, $player_id, $val);
     }
 
     #[\Override]
