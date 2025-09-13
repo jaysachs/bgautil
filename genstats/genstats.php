@@ -124,29 +124,38 @@ declare(strict_types=1);
 namespace Bga\Games\<?php echo $gamename ?>;
 
 interface StatsImpl {
-    public function incStat(mixed $delta, string $name, int $player_id = 0) : void;
-    public function setStat(mixed $val, string $name, int $player_id = 0) : void;
-    public function getStat(string $name, int $player_id = 0): mixed;
-    public function initStat(string $type, string $name, mixed $index, int $player_id = 0): void;
+    public function incStat(mixed $delta, string $name, ?int $player_id = null) : void;
+    public function setStat(mixed $val, string $name, ?int $player_id = null) : void;
+    public function getStat(string $name, ?int $player_id = null): mixed;
+    public function initStat(string $type, string $name, mixed $index, ?int $player_id = null): void;
+
+    public function applyAll(array $statops): void;
+}
+
+abstract class AbstractStatsImpl implements StatsImpl {
+    public function applyAll(array $statops): void {
+        foreach ($statops as $_ => $op) {
+            switch ($op->op_type) {
+                case OpType::INC:
+                    $this->incStat($op->value, $op->name, $op->player_id);
+                    break;
+                case OpType::SET:
+                    $this->setStat($op->value, $op->name, $op->player_id);
+                    break;
+            }
+        }
+    }
 };
 
-class Stat {
-    //  public string $index { get; }
-    private static array $allStats = [];
-
-    protected static function addStat(string $name, Stat $stat): void {
-        assert(!isset($allStats[$name]), "duplicate Stat name {$name}");
-        Stat::$allStats[$name] = $stat;
-    }
-
-    public static function lookup(string $name): ?Stat {
-        return @ Stat::$allStats[$name];
+abstract class Stat {
+    public abstract function valFromStr(string $str): mixed;
+    public function strForVal(mixed $val): string {
+        return "{$val}";
     }
 }
 
 class IntPlayerStat extends Stat {
     function __construct(private mixed $impl, public readonly string $index) {
-        Stat::addStat($index, $this);
     }
 
     /** @param int[] $player_ids */
@@ -174,11 +183,15 @@ class IntPlayerStat extends Stat {
     public function get(int $player_id): int {
         return $this->impl->getStat($this->index, $player_id);
     }
+
+    #[\Override]
+    public function valFromStr(string $str): mixed {
+        return (int) $str;
+    }
 }
 
 class BoolPlayerStat extends Stat {
     function __construct(private mixed $impl, public readonly string $index) {
-        Stat::addStat($index, $this);
     }
 
     /** @param int[] $player_ids */
@@ -202,11 +215,15 @@ class BoolPlayerStat extends Stat {
             $this->impl->initStat("player", $this->index, $val($player_id), $player_id);
         }
     }
+
+    #[\Override]
+    public function valFromStr(string $str): mixed {
+        return (bool) $str;
+    }
 }
 
 class FloatPlayerStat extends Stat {
     function __construct(private mixed $impl, public readonly string $index) {
-        Stat::addStat($index, $this);
     }
 
     /** @param int[] $player_ids */
@@ -234,11 +251,15 @@ class FloatPlayerStat extends Stat {
             $this->impl->initStat("player", $this->index, $val($player_id), $player_id);
         }
     }
+
+    #[\Override]
+    public function valFromStr(string $str): mixed {
+        return (float) $str;
+    }
 }
 
 class IntTableStat extends Stat {
     function __construct(private mixed $impl, public readonly string $index) {
-        Stat::addStat($index, $this);
     }
 
     public function init(int $val = 0): void {
@@ -256,11 +277,15 @@ class IntTableStat extends Stat {
     public function get(): int {
         return $this->impl->getStat($this->index);
     }
+
+    #[\Override]
+    public function valFromStr(string $str): mixed {
+        return (int) $str;
+    }
 }
 
 class BoolTableStat extends Stat {
     function __construct(private mixed $impl, public readonly string $index) {
-        Stat::addStat($index, $this);
     }
 
     public function init(bool $val = false): void {
@@ -274,11 +299,15 @@ class BoolTableStat extends Stat {
     public function get(): bool {
         return $this->impl->getStat($this->index);
     }
+
+    #[\Override]
+    public function valFromStr(string $str): mixed {
+        return (bool) $str;
+    }
 }
 
 class FloatTableStat extends Stat {
     function __construct(private mixed $impl, public readonly string $index) {
-        Stat::addStat($index, $this);
     }
 
     public function init(float $val = 0.0): void {
@@ -296,32 +325,112 @@ class FloatTableStat extends Stat {
     public function get(): float {
         return $this->impl->getStat($this->index);
     }
+
+    #[\Override]
+    public function valFromStr(string $str): mixed {
+        return (float) $str;
+    }
 }
 
-class GameStatsImpl implements StatsImpl {
+class GameStatsImpl extends AbstractStatsImpl {
     public function __construct(private \Bga\GameFramework\Table $game) {}
 
-    public function incStat(mixed $delta, string $name, int $player_id = 0) : void {
-        $this->game->incStat($delta, $name, $player_id ?? null);
+    #[\Override]
+    public function incStat(mixed $delta, string $name, ?int $player_id = null) : void {
+        $this->game->incStat($delta, $name, $player_id);
     }
 
-    public function setStat(mixed $val, string $name, int $player_id = 0) : void {
-        $this->game->setStat($val, $name, $player_id ?? null);
+    #[\Override]
+    public function setStat(mixed $val, string $name, ?int $player_id = null) : void {
+        $this->game->setStat($val, $name, $player_id);
     }
 
-    public function getStat(string $name, int $player_id = 0): mixed {
-        $this->game->getStat($name, $player_id ?? null);
+    #[\Override]
+    public function getStat(string $name, ?int $player_id = null): mixed {
+        return $this->game->getStat($name, $player_id);
     }
 
-    public function initStat(string $type, string $name, mixed $index, int $player_id = 0): void {
-        $this->game->initStat($type, $name, $index, $player_id ?? null);
+    #[\Override]
+    public function initStat(string $type, string $name, mixed $index, ?int $player_id = null): void {
+        $this->game->initStat($type, $name, $index, $player_id);
     }
+}
+
+enum OpType: string
+{
+    case SET = 'SET';
+    case INC = 'INC';
+}
+
+class StatOp {
+    public function __construct(
+        public readonly OpType $op_type,
+        public readonly string $name,
+        public readonly ?int $player_id,
+        public readonly mixed $value,
+        public readonly mixed $orig
+    ) {}
+}
+
+class RecordingStatsImpl extends AbstractStatsImpl
+{
+    /** @var StatOp[] */
+    private array $operations = [];
+
+    public function __construct(
+        private StatsImpl $impl
+    ) {}
+
+    /** @param StatOp[] ops */
+    public function addOperations(array $ops): void {
+        foreach ($ops as $op) {
+            $this->operations[] = $op;
+        }
+    }
+
+    /** @return StatOp[] */
+    public function getOperations(): array {
+        return $this->operations;
+    }
+
+    #[\Override]
+    public function incStat(mixed $delta, string $name, ?int $player_id = null) : void {
+        $this->operations[] = new StatOp(OpType::INC, $name, $player_id, $delta, $this->impl->getStat($name, $player_id));
+    }
+
+    #[\Override]
+    public function setStat(mixed $val, string $name, ?int $player_id = null) : void {
+        $this->operations[] = new StatOp(OpType::SET, $name, $player_id, $val, $this->impl->getStat($name, $player_id));
+    }
+
+    #[\Override]
+    public function initStat(string $type, string $name, mixed $index, ?int $player_id = null): void {
+        $this->impl->initStat($type, $name, $index, $player_id);
+    }
+
+    #[\Override]
+    public function getStat(string $name, ?int $player_id = null): mixed {
+        $val = $this->impl->getStat($name, $player_id);
+        // Reflect all the operations going on here. Not optimized, should be rarely used.
+        foreach ($this->operations as $_ => $op) {
+            if ($op->player_id == $player_id) {
+                switch ($op->op) {
+                    case OpType::INC:
+                        $val += $op->value; break;
+                    case OpType::SET:
+                        $val = $op->value; break;
+                }
+            }
+        }
+        return $val;
+    }
+
 }
 
 class Stats {
 
     public static function createForGame(\Bga\GameFramework\Table $game): Stats {
-        return new GameStatsImpl($game);
+        return new Stats(new GameStatsImpl($game));
     }
 
     /** @param StatsImpl $impl */
@@ -332,10 +441,19 @@ class Stats {
                   $typename =  ucfirst($type) . ucfirst($scope);
                   $name = strtoupper($scope) . "_" . $id; ?>
         $this-><?php echo  $name ?> = new <?php echo  $typename ?>Stat($impl, "<?php echo $n ?>");
+        $this->allStats["<?php echo $n ?>"] = $this-><?php echo $name ?>;
 <?php         }
           }
       } ?>
     }
+
+    /** @var array<int, Stat> */
+    private array $allStats = [];
+
+    public function lookup(string $name): ?Stat {
+        return @ $this->allStats[$name];
+    }
+
 
     /** @param int[] $player_ids */
     public function initAll(array $player_ids): void {
