@@ -411,9 +411,10 @@ class TestStatsImpl implements StatsImpl {
 
 class Stats {
 
-    public static function createForTest(): Stats {
+    /** @param array<int, int> $player_ids */
+    public static function createForTest(array $player_ids = [1, 2]): Stats {
         $stats = new Stats(new TestStatsImpl());
-        $stats->initAll();
+        $stats->initAll($player_ids);
         return $stats;
     }
 
