@@ -45,7 +45,7 @@ HOST=sftp://${BGAUSER}:@1.studio.boardgamearena.com:2022
 
 # exclude "local" dir, any dot-dir (like .git), emacs temp files
 # and BGA-controlled files.
-EXCLUDES='(((work/|local/|\.|.*#).*)|LICENSE_BGA|Makefile|_ide_helper.php|bga-framework.d.ts|psalm.xml|node_modules/.*)'
+EXCLUDES='(((work/|local/|\.|.*#).*)|LICENSE_BGA|_ide_helper.php|bga-framework.d.ts|node_modules/.*)'
 
 function lftp_via_sync() {
     COPY="lftp ${HOST}"
@@ -57,7 +57,7 @@ function lftp_via_sync() {
     fi
     declare -a files
     readarray -t files < \
-              <(find -E -X . -newer ${LAST_SYNC} -not -regex ^./"${EXCLUDES}" -type f)
+              <(find -E . -newer ${LAST_SYNC} -not -regex ^./"${EXCLUDES}" -type f)
     echo mput -O "${BGAGAME}" -d "${files[@]}" | ${COPY} && ${TOUCH}
 }
 
