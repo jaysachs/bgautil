@@ -388,38 +388,24 @@ class RecordingStatsImpl implements StatsImpl
 
 class TestStatsImpl implements StatsImpl {
     public $vals = [];
-    public function initStat(string $cat, string $name, mixed $value, ?int $player_id = 0): void {
-        if ($player_id === null) {
-            $this->vals[$name] = $value;
-        } else {
-            if (! isset($this->vals[$name])) {
-                $this->vals[$name] = [];
-            }
-            $this->vals[$name][$player_id] = $value;
-        }
+    public function initStat(string $cat, string $name, mixed $value, ?int $player_id = null): void {
+        $key = $player_id === null ? '@' . $name : $name . $player_id;
+        $this->vals[$key] = $value;
     }
 
-    public function incStat(mixed $delta, string $name, ?int $player_id = 0): void {
-        if ($player_id === null) {
-            $this->vals[$name] += $delta;
-        } else {
-            $this->vals[$name][$player_id] += $delta;
-        }
+    public function incStat(mixed $delta, string $name, ?int $player_id = null): void {
+        $key = $player_id === null ? '@' . $name : $name . $player_id;
+        @ $this->vals[$key] += $delta;
     }
 
-    public function setStat($value, $name, ?int $player_id = 0): void {
-        if ($player_id === null) {
-            $this->vals[$name] = $value;
-        } else {
-            $this->vals[$name][$player_id] = $value;
-        }
+    public function setStat($value, $name, ?int $player_id = null): void {
+        $key = $player_id === null ? '@' . $name : $name . $player_id;
+        $this->vals[$key] = $value;
     }
 
-    public function getStat($name, ?int $player_id = 0): mixed {
-        if ($player_id === null) {
-            return $this->vals[$name];
-        }
-        return $this->vals[$name][$player_id];
+    public function getStat($name, ?int $player_id = null): mixed {
+        $key = $player_id === null ? '@' . $name : $name . $player_id;
+        return @ $this->vals[$key];
     }
 }
 
