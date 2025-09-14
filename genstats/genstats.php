@@ -128,7 +128,124 @@ interface StatsImpl {
     public function setStat(mixed $val, string $name, ?int $player_id = null) : void;
     public function getStat(string $name, ?int $player_id = null): mixed;
     public function initStat(string $type, string $name, mixed $index, ?int $player_id = null): void;
+
+    public function enterDeferredMode(): void;
+    /** @return array<int, StatOp> */
+    public function exitDeferredMode(): array;
 }
+
+
+class GameStatsImpl implements StatsImpl {
+    /** @var StatOp[] */
+    private array $operations = [];
+    private bool $deferredMode = false;
+
+    public function __construct(private \Bga\GameFramework\Table $game) {}
+
+    public function enterDeferredMode(): void {
+        $this->deferredMode = true;
+    }
+
+    public function exitDeferredMode(): array {
+        $this->deferredMode = false;
+        $result = $this->operations;
+        $this->operations = [];
+        return $result;
+    }
+
+    #[\Override]
+    public function incStat(mixed $delta, string $name, ?int $player_id = null) : void {
+        if ($this->deferredMode) {
+            $this->operations[] = new StatOp(OpType::INC, $name, $player_id, $delta);
+        } else {
+            $this->game->incStat($delta, $name, $player_id);
+        }
+    }
+
+    #[\Override]
+    public function setStat(mixed $val, string $name, ?int $player_id = null) : void {
+        if ($this->deferredMode) {
+            $this->operations[] = new StatOp(OpType::SET, $name, $player_id, $val);
+        } else {
+            $this->game->setStat($val, $name, $player_id);
+        }
+    }
+
+    #[\Override]
+    public function getStat(string $name, ?int $player_id = null): mixed {
+        if ($this->deferredMode) {
+            $val = $this->game->getStat($name, $player_id);
+            // Reflect all the operations going on here. Not optimized, should be rarely used.
+            foreach ($this->operations as $_ => $op) {
+                if ($op->player_id == $player_id) {
+                    switch ($op->op_type) {
+                    case OpType::INC:
+                        $val += $op->value; break;
+                    case OpType::SET:
+                        $val = $op->value; break;
+                    }
+                }
+            }
+            return $val;
+        } else {
+            return $this->game->getStat($name, $player_id);
+        }
+    }
+
+    #[\Override]
+    public function initStat(string $type, string $name, mixed $index, ?int $player_id = null): void {
+        $this->game->initStat($type, $name, $index, $player_id);
+    }
+}
+
+enum OpType: string
+{
+    case SET = 'SET';
+    case INC = 'INC';
+}
+
+class StatOp {
+    public function __construct(
+        public readonly OpType $op_type,
+        public readonly string $name,
+        public readonly ?int $player_id,
+        public readonly mixed $value
+    ) {}
+}
+
+class TestStatsImpl implements StatsImpl {
+    private $vals = [];
+
+    public function enterDeferredMode(): void { }
+
+    /** @return array<int, StatOp> */
+    public function exitDeferredMode(): array { return []; }
+
+    public function initStat(string $cat, string $name, mixed $value, ?int $player_id = null): void {
+        $key = $player_id === null ? '@' . $name : $name . $player_id;
+        $this->vals[$key] = $value;
+    }
+
+    public function incStat(mixed $delta, string $name, ?int $player_id = null): void {
+        $key = $player_id === null ? '@' . $name : $name . $player_id;
+        @ $this->vals[$key] += $delta;
+    }
+
+    public function setStat($value, $name, ?int $player_id = null): void {
+        $key = $player_id === null ? '@' . $name : $name . $player_id;
+        $this->vals[$key] = $value;
+    }
+
+    public function getStat($name, ?int $player_id = null): mixed {
+        $key = $player_id === null ? '@' . $name : $name . $player_id;
+        return @ $this->vals[$key];
+    }
+}
+
+
+//
+// Specific Stat types
+//
 
 class IntPlayerStat {
     function __construct(private mixed $impl, public readonly string $index) {
@@ -278,140 +395,17 @@ class FloatTableStat {
     }
 }
 
-class GameStatsImpl implements StatsImpl {
-    public function __construct(private \Bga\GameFramework\Table $game) {}
-
-    #[\Override]
-    public function incStat(mixed $delta, string $name, ?int $player_id = null) : void {
-        $this->game->incStat($delta, $name, $player_id);
-    }
-
-    #[\Override]
-    public function setStat(mixed $val, string $name, ?int $player_id = null) : void {
-        $this->game->setStat($val, $name, $player_id);
-    }
-
-    #[\Override]
-    public function getStat(string $name, ?int $player_id = null): mixed {
-        return $this->game->getStat($name, $player_id);
-    }
-
-    #[\Override]
-    public function initStat(string $type, string $name, mixed $index, ?int $player_id = null): void {
-        $this->game->initStat($type, $name, $index, $player_id);
-    }
-}
-
-enum OpType: string
-{
-    case SET = 'SET';
-    case INC = 'INC';
-}
-
-class StatOp {
-    public function __construct(
-        public readonly OpType $op_type,
-        public readonly string $name,
-        public readonly ?int $player_id,
-        public readonly mixed $value
-    ) {}
-
-    /** @param array<int, StatOp> $statOps */
-    public static function applyAllTo(StatsImpl $impl, array $statOps): void {
-        foreach ($statOps as $op) {
-            switch ($op->op_type) {
-                case OpType::INC:
-                    $impl->incStat($op->value, $op->name, $op->player_id);
-                    break;
-                case OpType::SET:
-                    $impl->setStat($op->value, $op->name, $op->player_id);
-                    break;
-            }
-        }
-    }
-
-}
-
-class RecordingStatsImpl implements StatsImpl
-{
-    /** @var StatOp[] */
-    private array $operations = [];
-
-    public function __construct(
-        private StatsImpl $impl
-    ) {}
-
-    /** @param StatOp[] ops */
-    public function addOperations(array $ops): void {
-        foreach ($ops as $op) {
-            $this->operations[] = $op;
-        }
-    }
-
-    /** @return StatOp[] */
-    public function getOperations(): array {
-        return $this->operations;
-    }
-
-    #[\Override]
-    public function incStat(mixed $delta, string $name, ?int $player_id = null) : void {
-        $this->operations[] = new StatOp(OpType::INC, $name, $player_id, $delta);
-    }
-
-    #[\Override]
-    public function setStat(mixed $val, string $name, ?int $player_id = null) : void {
-        $this->operations[] = new StatOp(OpType::SET, $name, $player_id, $val);
-    }
-
-    #[\Override]
-    public function initStat(string $type, string $name, mixed $index, ?int $player_id = null): void {
-        $this->impl->initStat($type, $name, $index, $player_id);
-    }
-
-    #[\Override]
-    public function getStat(string $name, ?int $player_id = null): mixed {
-        $val = $this->impl->getStat($name, $player_id);
-        // Reflect all the operations going on here. Not optimized, should be rarely used.
-        foreach ($this->operations as $_ => $op) {
-            if ($op->player_id == $player_id) {
-                switch ($op->op_type) {
-                    case OpType::INC:
-                        $val += $op->value; break;
-                    case OpType::SET:
-                        $val = $op->value; break;
-                }
-            }
-        }
-        return $val;
-    }
-}
-
-class TestStatsImpl implements StatsImpl {
-    private $vals = [];
-    public function initStat(string $cat, string $name, mixed $value, ?int $player_id = null): void {
-        $key = $player_id === null ? '@' . $name : $name . $player_id;
-        $this->vals[$key] = $value;
-    }
-
-    public function incStat(mixed $delta, string $name, ?int $player_id = null): void {
-        $key = $player_id === null ? '@' . $name : $name . $player_id;
-        @ $this->vals[$key] += $delta;
-    }
-
-    public function setStat($value, $name, ?int $player_id = null): void {
-        $key = $player_id === null ? '@' . $name : $name . $player_id;
-        $this->vals[$key] = $value;
-    }
-
-    public function getStat($name, ?int $player_id = null): mixed {
-        $key = $player_id === null ? '@' . $name : $name . $player_id;
-        return @ $this->vals[$key];
-    }
-}
+//
+// The Stats class
+//
 
 class Stats {
 
-    /** @param array<int, int> $player_ids */
+    /**
+     * Convenience factory method that also initializes.
+     *
+     * @param array<int, int> $player_ids
+     */
     public static function createForTest(array $player_ids = [1, 2]): Stats {
         $stats = new Stats(new TestStatsImpl());
         $stats->initAll($player_ids);
@@ -457,4 +451,28 @@ class Stats {
 <?php         }
           }
       } ?>
+
+    public function enterDeferredMode(): void {
+        $this->impl->enterDeferredMode();
+    }
+
+    /** @return array<int, StatOp> */
+    public function exitDeferredMode(): array {
+        return $this->impl->exitDeferredMode();
+    }
+
+    /** @param array<int, StatOp> $statOps */
+    public function applyAll(array $statOps): void {
+        foreach ($statOps as $op) {
+            switch ($op->op_type) {
+                case OpType::INC:
+                    $this->impl->incStat($op->value, $op->name, $op->player_id);
+                    break;
+                case OpType::SET:
+                    $this->impl->setStat($op->value, $op->name, $op->player_id);
+                    break;
+            }
+        }
+    }
+
 }
