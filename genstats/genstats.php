@@ -127,7 +127,7 @@ interface StatsImpl {
     public function incStat(mixed $delta, string $name, ?int $player_id = null) : void;
     public function setStat(mixed $val, string $name, ?int $player_id = null) : void;
     public function getStat(string $name, ?int $player_id = null): mixed;
-    public function initStat(string $type, string $name, mixed $index, ?int $player_id = null): void;
+    public function initStat(string $type, string $name, mixed $val, ?int $player_id = null): void;
 
     public function enterDeferredMode(): void;
     /** @return array<int, StatOp> */
@@ -142,10 +142,12 @@ class GameStatsImpl implements StatsImpl {
 
     public function __construct(private \Bga\GameFramework\Table $game) {}
 
+    #[\Override]
     public function enterDeferredMode(): void {
         $this->deferredMode = true;
     }
 
+    #[\Override]
     public function exitDeferredMode(): array {
         $this->deferredMode = false;
         $result = $this->operations;
@@ -193,8 +195,8 @@ class GameStatsImpl implements StatsImpl {
     }
 
     #[\Override]
-    public function initStat(string $type, string $name, mixed $index, ?int $player_id = null): void {
-        $this->game->initStat($type, $name, $index, $player_id);
+    public function initStat(string $type, string $name, mixed $val, ?int $player_id = null): void {
+        $this->game->initStat($type, $name, $val, $player_id);
     }
 }
 
@@ -214,29 +216,36 @@ class StatOp {
 }
 
 class TestStatsImpl implements StatsImpl {
+    /** @var array<string, mixed> */
     private $vals = [];
 
+    #[\Override]
     public function enterDeferredMode(): void { }
 
+    #[\Override]
     /** @return array<int, StatOp> */
     public function exitDeferredMode(): array { return []; }
 
-    public function initStat(string $cat, string $name, mixed $value, ?int $player_id = null): void {
+    #[\Override]
+    public function initStat(string $type, string $name, mixed $val, ?int $player_id = null): void {
         $key = $player_id === null ? '@' . $name : $name . $player_id;
-        $this->vals[$key] = $value;
+        $this->vals[$key] = $val;
     }
 
+    #[\Override]
     public function incStat(mixed $delta, string $name, ?int $player_id = null): void {
         $key = $player_id === null ? '@' . $name : $name . $player_id;
         @ $this->vals[$key] += $delta;
     }
 
-    public function setStat($value, $name, ?int $player_id = null): void {
+    #[\Override]
+    public function setStat(mixed $val, string $name, ?int $player_id = null): void {
         $key = $player_id === null ? '@' . $name : $name . $player_id;
-        $this->vals[$key] = $value;
+        $this->vals[$key] = $val;
     }
 
-    public function getStat($name, ?int $player_id = null): mixed {
+    #[\Override]
+    public function getStat(string $name, ?int $player_id = null): mixed {
         $key = $player_id === null ? '@' . $name : $name . $player_id;
         return @ $this->vals[$key];
     }
