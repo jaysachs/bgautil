@@ -387,7 +387,7 @@ class RecordingStatsImpl implements StatsImpl
 }
 
 class TestStatsImpl implements StatsImpl {
-    public $vals = [];
+    private $vals = [];
     public function initStat(string $cat, string $name, mixed $value, ?int $player_id = null): void {
         $key = $player_id === null ? '@' . $name : $name . $player_id;
         $this->vals[$key] = $value;
@@ -410,6 +410,12 @@ class TestStatsImpl implements StatsImpl {
 }
 
 class Stats {
+
+    public static function createForTest(): Stats {
+        $stats = new Stats(new TestStatsImpl());
+        $stats->initAll();
+        return $stats;
+    }
 
     public static function createForGame(\Bga\GameFramework\Table $game): Stats {
         return new Stats(new GameStatsImpl($game));
