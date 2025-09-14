@@ -93,7 +93,7 @@ function statsFor(string $t_or_p, string $type): array {
     static $payload = file_get_contents("stats.json");
     static $all_stats = json_decode($payload, true);
 
-    $s = $all_stats[$t_or_p];
+    @ $s = $all_stats[$t_or_p];
     if ($s === null) {
         return [];
     }
@@ -384,7 +384,43 @@ class RecordingStatsImpl implements StatsImpl
         }
         return $val;
     }
+}
 
+class TestStatsImpl implements StatsImpl {
+    public $vals = [];
+    public function initStat(string $cat, string $name, mixed $value, ?int $player_id = 0): void {
+        if ($player_id === null) {
+            $this->vals[$name] = $value;
+        } else {
+            if (! isset($this->vals[$name])) {
+                $this->vals[$name] = [];
+            }
+            $this->vals[$name][$player_id] = $value;
+        }
+    }
+
+    public function incStat(mixed $delta, string $name, ?int $player_id = 0): void {
+        if ($player_id === null) {
+            $this->vals[$name] += $delta;
+        } else {
+            $this->vals[$name][$player_id] += $delta;
+        }
+    }
+
+    public function setStat($value, $name, ?int $player_id = 0): void {
+        if ($player_id === null) {
+            $this->vals[$name] = $value;
+        } else {
+            $this->vals[$name][$player_id] = $value;
+        }
+    }
+
+    public function getStat($name, ?int $player_id = 0): mixed {
+        if ($player_id === null) {
+            return $this->vals[$name];
+        }
+        return $this->vals[$name][$player_id];
+    }
 }
 
 class Stats {
