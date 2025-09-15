@@ -257,150 +257,150 @@ class TestStatsImpl implements StatsImpl {
 //
 
 class IntPlayerStat {
-    function __construct(private mixed $impl, public readonly string $index) {
+    function __construct(private mixed $impl, public readonly string $name) {
     }
 
     /** @param int[] $player_ids */
     public function init(array $player_ids, int $val = 0): void {
         foreach ($player_ids as $player_id) {
-            $this->impl->initStat("player", $this->index, $val, $player_id);
+            $this->impl->initStat("player", $this->name, $val, $player_id);
         }
     }
 
     /** @param int[] $player_ids */
     public function initMap(array $player_ids, \Closure $val): void {
         foreach ($player_ids as $player_id) {
-            $this->impl->initStat("player", $this->index, $val($player_id), $player_id);
+            $this->impl->initStat("player", $this->name, $val($player_id), $player_id);
         }
     }
 
     public function inc(int $player_id, int $delta = 1): void {
-        $this->impl->incStat($delta, $this->index, $player_id);
+        $this->impl->incStat($delta, $this->name, $player_id);
     }
 
     public function set(int $player_id, int $val): void {
-        $this->impl->setStat($val, $this->index, $player_id);
+        $this->impl->setStat($val, $this->name, $player_id);
     }
 
     public function get(int $player_id): int {
-        return $this->impl->getStat($this->index, $player_id);
+        return intval($this->impl->getStat($this->name, $player_id));
     }
 }
 
 class BoolPlayerStat {
-    function __construct(private mixed $impl, public readonly string $index) {
+    function __construct(private mixed $impl, public readonly string $name) {
     }
 
     /** @param int[] $player_ids */
     public function init(array $player_ids, bool $val = false): void {
         foreach ($player_ids as $player_id) {
-            $this->impl->initStat("player", $this->index, $val, $player_id);
+            $this->impl->initStat("player", $this->name, $val, $player_id);
         }
     }
 
     public function set(int $player_id, bool $val): void {
-        $this->impl->setStat($val, $this->index, $player_id);
+        $this->impl->setStat($val, $this->name, $player_id);
     }
 
     public function get(int $player_id): bool {
-        return $this->impl->getStat($this->index, $player_id);
+        return boolval($this->impl->getStat($this->name, $player_id));
     }
 
     /** @param int[] $player_ids */
     public function initMap(array $player_ids, \Closure $val): void {
         foreach ($player_ids as $player_id) {
-            $this->impl->initStat("player", $this->index, $val($player_id), $player_id);
+            $this->impl->initStat("player", $this->name, $val($player_id), $player_id);
         }
     }
 }
 
 class FloatPlayerStat {
-    function __construct(private mixed $impl, public readonly string $index) {
+    function __construct(private mixed $impl, public readonly string $name) {
     }
 
     /** @param int[] $player_ids */
     public function init(array $player_ids, float $val = 0.0): void {
         foreach ($player_ids as $player_id) {
-            $this->impl->initStat("player", $this->index, $val, $player_id);
+            $this->impl->initStat("player", $this->name, $val, $player_id);
         }
     }
 
     public function add(int $player_id, float $delta): void {
-        $this->impl->incStat($delta, $this->index, $player_id);
+        $this->impl->incStat($delta, $this->name, $player_id);
     }
 
     public function set(int $player_id, float $val): void {
-        $this->impl->setStat($val, $this->index, $player_id);
+        $this->impl->setStat($val, $this->name, $player_id);
     }
 
     public function get(int $player_id): float {
-        return $this->impl->getStat($this->index, $player_id);
+        return floatval($this->impl->getStat($this->name, $player_id));
     }
 
     /** @param int[] $player_ids */
     public function initMap(array $player_ids, \Closure $val): void {
         foreach ($player_ids as $player_id) {
-            $this->impl->initStat("player", $this->index, $val($player_id), $player_id);
+            $this->impl->initStat("player", $this->name, $val($player_id), $player_id);
         }
     }
 }
 
 class IntTableStat {
-    function __construct(private mixed $impl, public readonly string $index) {
+    function __construct(private mixed $impl, public readonly string $name) {
     }
 
     public function init(int $val = 0): void {
-        $this->impl->initStat("table", $this->index, $val);
+        $this->impl->initStat("table", $this->name, $val);
     }
 
     public function inc(int $delta = 1): void {
-        $this->impl->incStat($delta, $this->index);
+        $this->impl->incStat($delta, $this->name);
     }
 
     public function set(int $val): void {
-        $this->impl->setStat($val, $this->index);
+        $this->impl->setStat($val, $this->name);
     }
 
     public function get(): int {
-        return $this->impl->getStat($this->index);
+        return intval($this->impl->getStat($this->name));
     }
 }
 
 class BoolTableStat {
-    function __construct(private mixed $impl, public readonly string $index) {
+    function __construct(private mixed $impl, public readonly string $name) {
     }
 
     public function init(bool $val = false): void {
-        $this->impl->initStat("table", $this->index, $val);
+        $this->impl->initStat("table", $this->name, $val);
     }
 
     public function set(bool $val): void {
-        $this->impl->setStat($val, $this->index);
+        $this->impl->setStat($val, $this->name);
     }
 
     public function get(): bool {
-        return $this->impl->getStat($this->index);
+        return boolval($this->impl->getStat($this->name));
     }
 }
 
 class FloatTableStat {
-    function __construct(private mixed $impl, public readonly string $index) {
+    function __construct(private mixed $impl, public readonly string $name) {
     }
 
     public function init(float $val = 0.0): void {
-        $this->impl->initStat("table", $this->index, $val);
+        $this->impl->initStat("table", $this->name, $val);
     }
 
     public function add(float $delta): void {
-        $this->impl->incStat($delta, $this->index);
+        $this->impl->incStat($delta, $this->name);
     }
 
     public function set(float $val): void {
-        $this->impl->setStat($val, $this->index);
+        $this->impl->setStat($val, $this->name);
     }
 
     public function get(): float {
-        return $this->impl->getStat($this->index);
+        return floatval($this->impl->getStat($this->name));
     }
 }
 
