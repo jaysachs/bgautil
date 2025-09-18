@@ -73,7 +73,7 @@ Other options:
    $stats->PLAYER_NUMBER_TURNS->inc($player_id);
    $stats->PLAYER_POINTS_FROM_ADJACENCY->inc($player_id, 5);
    $stats->TABLE_GAME_ENDED_DUE_TO_PIECE_EXHAUSTION->set(true);
-   $stats->TABLE_OTHER_FLOAT->set(1.15, $stats->TABLE_OTHER_FLOAT->get());
+   $stats->TABLE_OTHER_FLOAT->set(1.15 + $stats->TABLE_OTHER_FLOAT->get());
    ...
 ```
 
