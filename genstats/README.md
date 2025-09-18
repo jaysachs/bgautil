@@ -31,22 +31,28 @@ Insert one line of configuration into the `Game.php` constructor:
 
    public function __construct() {
        ...
-       $this->stats = new Stats($this);
+       $this->stats = Stats::createForGame($this);
        ...
    }
 ```
 
 ### Initialization
 
-Initialize stats in `setupNewGame()`:
+Initialize all stats in the `setupNewGame()`:
 
 ```php
     protected function setupNewGame($players, $options = []) {
        ...
        // Initialize all stats to "zero" values
        $this->stats->initAll(array_keys($players));
+       ...
+    }
+```
 
-       // Or, initialize each stat individually:
+Other options:
+``` php
+       ...
+       // Initialize each stat individually:
        $this->stats->PLAYER_MY_FLOAT_STAT->init(array_keys($players), 1.732);
        Sthis->stats->PLAYER_MY_BOOL_STAT->init(array_keys($players), true);
 
@@ -65,6 +71,7 @@ Initialize stats in `setupNewGame()`:
 ```php
    ...
    $stats->PLAYER_NUMBER_TURNS->inc($player_id);
+   $stats->PLAYER_POINTS_FROM_ADJACENCY->inc($player_id, 5);
    $stats->TABLE_GAME_ENDED_DUE_TO_PIECE_EXHAUSTION->set(true);
    $stats->TABLE_OTHER_FLOAT->set(1.15, $stats->TABLE_OTHER_FLOAT->get());
    ...
@@ -72,8 +79,5 @@ Initialize stats in `setupNewGame()`:
 
 ## TODOs:
 
- * improve `toIdentifier()`.
- * determine if need to include the BGA license boilerplate in the
-   generated code.
- * let the Stats class name be customized?
- *
+ * Document the deferredMode and use in undo.
+ * possibly improve `toIdentifier()`.
