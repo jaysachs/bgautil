@@ -99,14 +99,40 @@ StatOps via `$this->stats->applyAll(array $ops)`.
 
 This approach is taken, rather than trying to "undo" the intermiate
 statistics, because it's more complex to undo `set` of statistic
-values; the previously value would need to be recorded. While this
+values; the current (previous) value would need to be recorded. While this
 would be possible, it's more complex, and there's also a philosophical
 justification in that the stats aren't "real" until the move is
 committed. (Then again, stats probably aren't generally interesting
 until after a game is over.) It would be reasonable to consider an
 alternate "deferred mode" where stat applications are applied to the
 DB, but also recorded in memory, and then on undo, an
-`undoApplyAll(array)` function is called.`
+`undoApplyAll(array)` function is called.
+
+#### Example of deferredMode
+
+``` php
+  function actDoSomethingUndoable(...) {
+    $this->stats->enterDeferredMode();
+    ...
+    // note we're passing the StatOp[] and expect it to be saved
+    $this->persistUndableToDb(..., $this->stats->leaveDeferredMode());
+    ...
+  }
+
+  function actUndo(...) {
+    ...
+    $move = $this->retrieveUndoableMove();
+    ...
+    $this->persistUndoneState($move);
+  }
+
+  function actTurnDone(...) {
+    ...
+    $deferredStats = $this->retrieveDeferredStats();
+    $this->stats->applyAll($deferredStats);
+    ...
+  }
+```
 
 ## TODOs:
 
