@@ -77,6 +77,37 @@ Other options:
    ...
 ```
 
+### deferredMode
+
+Supporting granular undo in a game can present difficulty for
+statistics, since you should undo any statistic changes
+made. Sometimes this is straightforward. Consider, however a passive
+ability that is used implicitly in permitting a move, where you have a
+statistic (per player) that tracks how often that passive ability
+actually tooko effect. Undoing the move itself is straightforward, but
+in order to undo the statistic, you also need to record in the
+database what statistic changes were made.
+
+To address this, `Stats` has a "deferredMode", during which statistic
+changes are not recorded in the database but instead accumulated
+in-memory. When deferred mode is explicitly exited, than array of
+`StatOp` objects is returned. Those can be stored in the database
+along with "turn progress"; on undo, just un-apply the turn progress
+(as normal) and "throw away" the StatOps. When the turn is "committed"
+(i.e. undo is no longer possible), you can apply the accumulated
+StatOps via `$this->stats->applyAll(array $ops)`.
+
+This approach is taken, rather than trying to "undo" the intermiate
+statistics, because it's more complex to undo `set` of statistic
+values; the previously value would need to be recorded. While this
+would be possible, it's more complex, and there's also a philosophical
+justification in that the stats aren't "real" until the move is
+committed. (Then again, stats probably aren't generally interesting
+until after a game is over.) It would be reasonable to consider an
+alternate "deferred mode" where stat applications are applied to the
+DB, but also recorded in memory, and then on undo, an
+`undoApplyAll(array)` function is called.`
+
 ## TODOs:
 
  * Document the deferredMode and use in undo.
