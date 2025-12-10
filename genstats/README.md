@@ -5,19 +5,24 @@ corresponding to the BGA `stats.json` file.
 
 ## Generation
 
-Generate the Stats class via
+Assumes the current directory is the main game directory where
+`stats.json` is located, generate the Stats class via
 
 ```sh
-$ php genstats.php gamename > modules/php/Stats.php
+$ php genstats.php > modules/php/Stats.php
 ```
 
-(assumes the current directory is the main game directory where
-`stats.json` is located).
+If the current directory name does not match the game name (used to
+specify the PHP namespace), you can specify the game name like
 
-The generated `Stats.php` file wil contain definitions of backed enums
-for each statistic defined in `stats.json`, with the enum name derived
-from the `stats.json` identifiers, and with typed methods for the
-different kinds of stats (table / player, int / float / bool).
+```sh
+$ php genstats.php MyGameName > modules/php/Stats.php
+```
+
+The generated `Stats.php` file wil contain definitions of PHP backed
+enums for each statistic defined in `stats.json`, with the enum name
+derived from the `stats.json` identifiers, and with typed methods for
+the different kinds of stats (table / player, int / float / bool).
 
 ## Usage in game code
 
@@ -77,11 +82,15 @@ Other options:
    ...
 ```
 
-### deferredMode
+### Advanced/experimental: deferredMode
 
-Supporting granular undo in a game can present difficulty for
-statistics, since you should undo any statistic changes
-made. Sometimes this is straightforward. Consider, however a passive
+NOTE: You probably don't need this.
+
+Supporting granular undo that is not based on
+`undoRestorePoint`/`undoSavepoint` in a game presents a challenge for
+accurately accumulating statistics, since you need to undo any
+statistic changes made for game state changes that were
+undone. Sometimes this is straightforward. Consider, however a passive
 ability that is used implicitly in permitting a move, where you have a
 statistic (per player) that tracks how often that passive ability
 actually tooko effect. Undoing the move itself is straightforward, but
