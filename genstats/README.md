@@ -108,7 +108,7 @@ alternate "deferred mode" where stat applications are applied to the
 DB, but also recorded in memory, and then on undo, an
 `undoApplyAll(array)` function is called.
 
-#### Example of deferredMode
+#### Example of deferredMode use:
 
 ``` php
   function actDoSomethingUndoable(...) {
@@ -136,5 +136,4 @@ DB, but also recorded in memory, and then on undo, an
 
 ## TODOs:
 
- * Document the deferredMode and use in undo.
  * possibly improve `toIdentifier()`.

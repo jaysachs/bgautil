@@ -77,11 +77,13 @@
  */
 declare(strict_types=1);
 
-if (count($argv) != 2) {
-    error_log("Usage: php gentstats.php gamename");
+if (count($argv) > 2) {
+    error_log("Usage: php gentstats.php [gamename]");
     exit(1);
 }
-$gamename = $argv[1];
+// in PHP 8.5+, we can just use `last` instead of `array_key_last(array_flip())`
+$gamename = $argv[1]
+    ?? array_key_last(array_flip(explode(DIRECTORY_SEPARATOR, getcwd())));
 
 function toIdentifier($name): string {
     return strtoupper(str_replace(" ","_",$name));
