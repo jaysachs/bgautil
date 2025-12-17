@@ -126,17 +126,18 @@ namespace Bga\Games\<?php echo $gamename ?>;
 interface StatsImpl {
     public function incStat(mixed $delta, string $name, ?int $player_id = null) : void;
     public function setStat(mixed $val, string $name, ?int $player_id = null) : void;
+    /** @return int|float|bool|null */
     public function getStat(string $name, ?int $player_id = null): mixed;
     public function initStat(string $type, string $name, mixed $val, ?int $player_id = null): void;
 
     public function enterDeferredMode(): void;
-    /** @return array<int, StatOp> */
+    /** @return list<StatOp> */
     public function exitDeferredMode(): array;
 }
 
 
 class GameStatsImpl implements StatsImpl {
-    /** @var StatOp[] */
+    /** @var list<StatOp> */
     private array $operations = [];
     private bool $deferredMode = false;
 
@@ -155,28 +156,42 @@ class GameStatsImpl implements StatsImpl {
         return $result;
     }
 
+    /** @param float|int $delta */
     #[\Override]
     public function incStat(mixed $delta, string $name, ?int $player_id = null) : void {
         if ($this->deferredMode) {
             $this->operations[] = new StatOp(OpType::INC, $name, $player_id, $delta);
         } else {
-            $this->game->incStat($delta, $name, $player_id);
+            if ($player_id !== null) {
+                $this->game->playerStats->inc($name, $delta, $player_id);
+            } else {
+                $this->game->tableStats->inc($name, $delta);
+            }
         }
     }
 
+    /** @param float|int|bool $val */
     #[\Override]
     public function setStat(mixed $val, string $name, ?int $player_id = null) : void {
         if ($this->deferredMode) {
             $this->operations[] = new StatOp(OpType::SET, $name, $player_id, $val);
         } else {
-            $this->game->setStat($val, $name, $player_id);
+            if ($player_id !== null) {
+                $this->game->playerStats->set($name, $val, $player_id);
+            } else {
+                $this->game->tableStats->set($name, $val);
+            }
         }
     }
 
+    /** @return float|int|bool|null */
     #[\Override]
     public function getStat(string $name, ?int $player_id = null): mixed {
+        /** @var float|int|bool */
+        $val = ($player_id !== null)
+            ? $this->game->playerStats->get($name, $player_id)
+            : $this->game->tableStats->get($name);
         if ($this->deferredMode) {
-            $val = $this->game->getStat($name, $player_id);
             // Reflect all the operations going on here. Not optimized, should be rarely used.
             foreach ($this->operations as $_ => $op) {
                 if ($op->player_id == $player_id) {
@@ -188,15 +203,18 @@ class GameStatsImpl implements StatsImpl {
                     }
                 }
             }
-            return $val;
-        } else {
-            return $this->game->getStat($name, $player_id);
         }
+        return $val;
     }
 
+    /** @param float|int|bool $val */
     #[\Override]
     public function initStat(string $type, string $name, mixed $val, ?int $player_id = null): void {
-        $this->game->initStat($type, $name, $val, $player_id);
+        if ($player_id !== null) {
+            $this->game->playerStats->init($name, $val);
+        } else {
+            $this->game->tableStats->init($name, $val);
+        }
     }
 }
 
@@ -207,6 +225,7 @@ enum OpType: string
 }
 
 class StatOp {
+    /** @param int|float|bool|null $value */
     public function __construct(
         public readonly OpType $op_type,
         public readonly string $name,
@@ -216,7 +235,7 @@ class StatOp {
 }
 
 class TestStatsImpl implements StatsImpl {
-    /** @var array<string, mixed> */
+    /** @var array<string, int|float|bool> */
     private $vals = [];
 
     #[\Override]
@@ -226,24 +245,28 @@ class TestStatsImpl implements StatsImpl {
     /** @return array<int, StatOp> */
     public function exitDeferredMode(): array { return []; }
 
+    /** @param int|float|bool $val */
     #[\Override]
     public function initStat(string $type, string $name, mixed $val, ?int $player_id = null): void {
         $key = $player_id === null ? '@' . $name : $name . $player_id;
         $this->vals[$key] = $val;
     }
 
+    /** @param int|float $delta */
     #[\Override]
     public function incStat(mixed $delta, string $name, ?int $player_id = null): void {
         $key = $player_id === null ? '@' . $name : $name . $player_id;
         @ $this->vals[$key] += $delta;
     }
 
+    /** @param int|float|bool $val */
     #[\Override]
     public function setStat(mixed $val, string $name, ?int $player_id = null): void {
         $key = $player_id === null ? '@' . $name : $name . $player_id;
         $this->vals[$key] = $val;
     }
 
+    /** @return int|bool|float|null */
     #[\Override]
     public function getStat(string $name, ?int $player_id = null): mixed {
         $key = $player_id === null ? '@' . $name : $name . $player_id;
@@ -257,6 +280,7 @@ class TestStatsImpl implements StatsImpl {
 //
 
 class IntPlayerStat {
+    /** @param StatsImpl $impl */
     function __construct(private mixed $impl, public readonly string $name) {
     }
 
@@ -267,7 +291,10 @@ class IntPlayerStat {
         }
     }
 
-    /** @param int[] $player_ids */
+    /**
+     * @param \Closure(mixed):int $val
+     * @param int[] $player_ids
+     */
     public function initMap(array $player_ids, \Closure $val): void {
         foreach ($player_ids as $player_id) {
             $this->impl->initStat("player", $this->name, $val($player_id), $player_id);
@@ -288,6 +315,7 @@ class IntPlayerStat {
 }
 
 class BoolPlayerStat {
+    /** @param StatsImpl $impl */
     function __construct(private mixed $impl, public readonly string $name) {
     }
 
@@ -315,6 +343,7 @@ class BoolPlayerStat {
 }
 
 class FloatPlayerStat {
+    /** @param StatsImpl $impl */
     function __construct(private mixed $impl, public readonly string $name) {
     }
 
@@ -346,6 +375,7 @@ class FloatPlayerStat {
 }
 
 class IntTableStat {
+    /** @param StatsImpl $impl */
     function __construct(private mixed $impl, public readonly string $name) {
     }
 
@@ -367,6 +397,7 @@ class IntTableStat {
 }
 
 class BoolTableStat {
+    /** @param StatsImpl $impl */
     function __construct(private mixed $impl, public readonly string $name) {
     }
 
@@ -384,6 +415,7 @@ class BoolTableStat {
 }
 
 class FloatTableStat {
+    /** @param StatsImpl $impl */
     function __construct(private mixed $impl, public readonly string $name) {
     }
 
