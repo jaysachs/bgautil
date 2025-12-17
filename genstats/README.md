@@ -124,7 +124,7 @@ DB, but also recorded in memory, and then on undo, an
     $this->stats->enterDeferredMode();
     ...
     // note we're passing the StatOp[] and expect it to be saved
-    $this->persistUndableToDb(..., $this->stats->leaveDeferredMode());
+    $this->persistUndoableToDb(..., $this->stats->leaveDeferredMode());
     ...
   }
 

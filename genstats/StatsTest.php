@@ -18,75 +18,19 @@
 
 declare(strict_types=1);
 
-namespace Bga\GameFramework {
-
-class Table {}
-
-}
-
-
 namespace {
 
 use PHPUnit\Framework\TestCase;
 
 use Bga\Games\testgame\Stats;
 
-
-class FakeImpl extends Bga\GameFramework\Table {
-    private $vals = [];
-
-    public function initStat($cat, $name, $value, $player_id = null) {
-        if ($player_id === null) {
-            if ($cat != "table") {
-                throw new \InvalidArgumentException(
-                    "table stats require null player_id");
-            }
-            $this->vals[$name] = $value;
-        } else {
-            if ($cat != "player") {
-                throw new \InvalidArgumentException(
-                    "player stats require player_id");
-            }
-            if (! isset($this->vals[$name])) {
-                $this->vals[$name] = [];
-            }
-            $this->vals[$name][$player_id] = $value;
-        }
-    }
-
-    public function getStat($name, $player_id = null) {
-        if ($player_id === null) {
-            return $this->vals[$name];
-        }
-        return $this->vals[$name][$player_id];
-    }
-
-    public function incStat($delta, $name, $player_id = null) {
-        if ($player_id === null) {
-            $this->vals[$name] += $delta;
-        } else {
-            $this->vals[$name][$player_id] += $delta;
-        }
-    }
-
-    public function setStat($value, $name, $player_id = null) {
-        if ($player_id === null) {
-            $this->vals[$name] = $value;
-        } else {
-            $this->vals[$name][$player_id] = $value;
-        }
-    }
-}
-
 final class StatsTest extends TestCase
 {
     const array PLAYER_IDS = [ 5, 7 ];
-    private ?FakeImpl $impl;
     private Stats $stats;
 
     protected function setUp(): void {
-        $this->impl = new FakeImpl();
-        $this->stats = Stats::createForGame($this->impl);
+        $this->stats = Stats::createForTest();
     }
 
     public function testInitAll(): void {
@@ -102,13 +46,6 @@ final class StatsTest extends TestCase
         $this->assertEquals(0, $this->stats->TABLE_CITIES_CAPTURED->get());
         $this->assertEquals(false, $this->stats->TABLE_SUDDEN_DEATH->get());
         $this->assertEquals(0.0, $this->stats->TABLE_AVERAGE_PIECES_PER_TURN->get());
-    }
-
-    public function testInitMap(): void {
-        $this->stats->PLAYER_NUMBER_TURNS->initMap(self::PLAYER_IDS,
-                                            function (int $p) { return $p*$p+1; });
-        $this->assertEquals(26, $this->stats->PLAYER_NUMBER_TURNS->get(5));
-        $this->assertEquals(50, $this->stats->PLAYER_NUMBER_TURNS->get(7));
     }
 
     public function testPlayerInt(): void {

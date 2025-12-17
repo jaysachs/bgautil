@@ -47,19 +47,12 @@
  *    protected function setupNewGame($players, $options = []) {
  *        ...
  *        // Initialize all stats to "zero" values
- *        $this->stats->initAll(array_keys($players));
+ *        $this->stats->initAll();
  *
  *        // Or, initialize each stat individually:
- *        $this->stats->PLAYER_MY_FLOAT_STAT->initAll(array_keys($players), 1.732);
- *        $this->stats->PLAYER_MY_BOOL_STAT->initAll(array_keys($players), true);
+ *        $this->stats->PLAYER_MY_FLOAT_STAT->initAll(1.732);
+ *        $this->stats->PLAYER_MY_BOOL_STAT->initAll(true);
  *
- *        // Or, different value per player id:
- *        foreach ($players as $player_id => $player) {
- *            $this->stats->PLAYER_MY_INT_STAT->init($player_id, rand(0, 4));
- *        }
- *        // or, alternatively use initMap():
- *        $this->stats->PLAYER_MY_OTHER_INT_STAT->initMap($array_keys($players),
- *            function ($pid) { return rand(0, 4); });
  *
  *        // Table stats are simpler, only one possible init:
  *        $this->stats->TABLE_MY_FLOAT_STAT->init(3.14159);
@@ -128,7 +121,10 @@ interface StatsImpl {
     public function setStat(mixed $val, string $name, ?int $player_id = null) : void;
     /** @return int|float|bool|null */
     public function getStat(string $name, ?int $player_id = null): mixed;
-    public function initStat(string $type, string $name, mixed $val, ?int $player_id = null): void;
+    /** @param int|float|bool $val */
+    public function initTableStat(string $name, mixed $val = null): void;
+    /** @param int|float|bool $val */
+    public function initPlayerStat(string $name, mixed $val = null): void;
 
     public function enterDeferredMode(): void;
     /** @return list<StatOp> */
@@ -209,12 +205,12 @@ class GameStatsImpl implements StatsImpl {
 
     /** @param float|int|bool $val */
     #[\Override]
-    public function initStat(string $type, string $name, mixed $val, ?int $player_id = null): void {
-        if ($player_id !== null) {
-            $this->game->playerStats->init($name, $val);
-        } else {
-            $this->game->tableStats->init($name, $val);
-        }
+    public function initTableStat(string $name, mixed $val = null): void {
+        $this->game->tableStats->init($name, $val);
+    }
+    /** @param int|float|bool|null $val */
+    public function initPlayerStat(string $name, mixed $val = null): void {
+        $this->game->playerStats->init($name, $val);
     }
 }
 
@@ -235,8 +231,12 @@ class StatOp {
 }
 
 class TestStatsImpl implements StatsImpl {
-    /** @var array<string, int|float|bool> */
-    private $vals = [];
+    /** @var array<string,int|float|bool> */
+    private $tvals = [];
+    /** @var array<string,array<int,int|float|bool>> */
+    private $pvals = [];
+    /** @var array<string,int|float|bool> */
+    private $pinitvals = [];
 
     #[\Override]
     public function enterDeferredMode(): void { }
@@ -247,30 +247,56 @@ class TestStatsImpl implements StatsImpl {
 
     /** @param int|float|bool $val */
     #[\Override]
-    public function initStat(string $type, string $name, mixed $val, ?int $player_id = null): void {
-        $key = $player_id === null ? '@' . $name : $name . $player_id;
-        $this->vals[$key] = $val;
+    public function initPlayerStat(string $name, mixed $val = null): void {
+        $this->pinitvals[$name] = $val;
+    }
+
+    /** @param int|float|bool $val */
+    #[\Override]
+    public function initTableStat(string $name, mixed $val = null): void {
+        $this->tvals[$name] = $val;
     }
 
     /** @param int|float $delta */
     #[\Override]
     public function incStat(mixed $delta, string $name, ?int $player_id = null): void {
-        $key = $player_id === null ? '@' . $name : $name . $player_id;
-        @ $this->vals[$key] += $delta;
+        if ($player_id === null) {
+            $this->tvals[$name] += $delta;
+        } else {
+            $key = $name . ':' . $player_id;
+            if (!isset($this->pvals[$key])) {
+                $this->pvals[$key] = $this->pinitvals[$name];
+            }
+            $this->pvals[$key] += $delta;
+        }
     }
 
     /** @param int|float|bool $val */
     #[\Override]
     public function setStat(mixed $val, string $name, ?int $player_id = null): void {
-        $key = $player_id === null ? '@' . $name : $name . $player_id;
-        $this->vals[$key] = $val;
+        if ($player_id === null) {
+            $this->tvals[$name] = $val;
+        }
+        else {
+            $key = $name . ':' . $player_id;
+            $this->pvals[$key] = $val;
+        }
     }
 
     /** @return int|bool|float|null */
     #[\Override]
     public function getStat(string $name, ?int $player_id = null): mixed {
-        $key = $player_id === null ? '@' . $name : $name . $player_id;
-        return @ $this->vals[$key];
+        if ($player_id === null) {
+            return $this->tvals[$name];
+        }
+        else {
+            $key = $name . ':' . $player_id;
+            if (isset($this->pvals[$key])) {
+                return $this->pvals[$key];
+            } else {
+                return $this->pinitvals[$name];
+            }
+        }
     }
 }
 
@@ -285,20 +311,8 @@ class IntPlayerStat {
     }
 
     /** @param int[] $player_ids */
-    public function init(array $player_ids, int $val = 0): void {
-        foreach ($player_ids as $player_id) {
-            $this->impl->initStat("player", $this->name, $val, $player_id);
-        }
-    }
-
-    /**
-     * @param \Closure(mixed):int $val
-     * @param int[] $player_ids
-     */
-    public function initMap(array $player_ids, \Closure $val): void {
-        foreach ($player_ids as $player_id) {
-            $this->impl->initStat("player", $this->name, $val($player_id), $player_id);
-        }
+    public function init(int $val = 0): void {
+        $this->impl->initPlayerStat($this->name, $val);
     }
 
     public function inc(int $player_id, int $delta = 1): void {
@@ -320,10 +334,8 @@ class BoolPlayerStat {
     }
 
     /** @param int[] $player_ids */
-    public function init(array $player_ids, bool $val = false): void {
-        foreach ($player_ids as $player_id) {
-            $this->impl->initStat("player", $this->name, $val, $player_id);
-        }
+    public function init(bool $val = false): void {
+        $this->impl->initPlayerStat($this->name, $val);
     }
 
     public function set(int $player_id, bool $val): void {
@@ -333,13 +345,6 @@ class BoolPlayerStat {
     public function get(int $player_id): bool {
         return boolval($this->impl->getStat($this->name, $player_id));
     }
-
-    /** @param int[] $player_ids */
-    public function initMap(array $player_ids, \Closure $val): void {
-        foreach ($player_ids as $player_id) {
-            $this->impl->initStat("player", $this->name, $val($player_id), $player_id);
-        }
-    }
 }
 
 class FloatPlayerStat {
@@ -347,11 +352,8 @@ class FloatPlayerStat {
     function __construct(private mixed $impl, public readonly string $name) {
     }
 
-    /** @param int[] $player_ids */
-    public function init(array $player_ids, float $val = 0.0): void {
-        foreach ($player_ids as $player_id) {
-            $this->impl->initStat("player", $this->name, $val, $player_id);
-        }
+    public function init(float $val = 0.0): void {
+        $this->impl->initPlayerStat($this->name, $val);
     }
 
     public function add(int $player_id, float $delta): void {
@@ -365,13 +367,6 @@ class FloatPlayerStat {
     public function get(int $player_id): float {
         return floatval($this->impl->getStat($this->name, $player_id));
     }
-
-    /** @param int[] $player_ids */
-    public function initMap(array $player_ids, \Closure $val): void {
-        foreach ($player_ids as $player_id) {
-            $this->impl->initStat("player", $this->name, $val($player_id), $player_id);
-        }
-    }
 }
 
 class IntTableStat {
@@ -380,7 +375,7 @@ class IntTableStat {
     }
 
     public function init(int $val = 0): void {
-        $this->impl->initStat("table", $this->name, $val);
+        $this->impl->initTableStat($this->name, $val);
     }
 
     public function inc(int $delta = 1): void {
@@ -402,7 +397,7 @@ class BoolTableStat {
     }
 
     public function init(bool $val = false): void {
-        $this->impl->initStat("table", $this->name, $val);
+        $this->impl->initTableStat($this->name, $val);
     }
 
     public function set(bool $val): void {
@@ -420,7 +415,7 @@ class FloatTableStat {
     }
 
     public function init(float $val = 0.0): void {
-        $this->impl->initStat("table", $this->name, $val);
+        $this->impl->initTableStat($this->name, $val);
     }
 
     public function add(float $delta): void {
@@ -470,14 +465,13 @@ class Stats {
       } ?>
     }
 
-    /** @param int[] $player_ids */
-    public function initAll(array $player_ids): void {
+    public function initAll(): void {
 <?php foreach (["player", "table"] as $scope) {
           foreach (["int", "float", "bool"] as $type) {
               foreach (statsFor($scope, $type) as $n => $id) {
                   $typename =  ucfirst($type) . ucfirst($scope);
                   $name = strtoupper($scope) . "_" . $id; ?>
-      $this-><?php echo $name ?>->init(<?php if ($scope == "player") { ?>$player_ids<?php } ?>);
+      $this-><?php echo $name ?>->init();
 <?php         }
           }
       } ?>
