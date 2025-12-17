@@ -122,9 +122,9 @@ interface StatsImpl {
     /** @return int|float|bool|null */
     public function getStat(string $name, ?int $player_id = null): mixed;
     /** @param int|float|bool $val */
-    public function initTableStat(string $name, mixed $val = null): void;
+    public function initTableStat(string $name, mixed $val): void;
     /** @param int|float|bool $val */
-    public function initPlayerStat(string $name, mixed $val = null): void;
+    public function initPlayerStat(string $name, mixed $val): void;
 
     public function enterDeferredMode(): void;
     /** @return list<StatOp> */
@@ -205,11 +205,11 @@ class GameStatsImpl implements StatsImpl {
 
     /** @param float|int|bool $val */
     #[\Override]
-    public function initTableStat(string $name, mixed $val = null): void {
+    public function initTableStat(string $name, mixed $val): void {
         $this->game->tableStats->init($name, $val);
     }
-    /** @param int|float|bool|null $val */
-    public function initPlayerStat(string $name, mixed $val = null): void {
+    /** @param int|float|bool $val */
+    public function initPlayerStat(string $name, mixed $val): void {
         $this->game->playerStats->init($name, $val);
     }
 }
@@ -247,13 +247,13 @@ class TestStatsImpl implements StatsImpl {
 
     /** @param int|float|bool $val */
     #[\Override]
-    public function initPlayerStat(string $name, mixed $val = null): void {
+    public function initPlayerStat(string $name, mixed $val): void {
         $this->pinitvals[$name] = $val;
     }
 
     /** @param int|float|bool $val */
     #[\Override]
-    public function initTableStat(string $name, mixed $val = null): void {
+    public function initTableStat(string $name, mixed $val): void {
         $this->tvals[$name] = $val;
     }
 
@@ -263,11 +263,13 @@ class TestStatsImpl implements StatsImpl {
         if ($player_id === null) {
             $this->tvals[$name] += $delta;
         } else {
-            $key = $name . ':' . $player_id;
-            if (!isset($this->pvals[$key])) {
-                $this->pvals[$key] = $this->pinitvals[$name];
+            if (!isset($this->pvals[$name])) {
+                $this->pvals[$name] = [];
             }
-            $this->pvals[$key] += $delta;
+            if (!isset($this->pvals[$name][$player_id])) {
+                $this->pvals[$name][$player_id] = $this->pinitvals[$name];
+            }
+            $this->pvals[$name][$player_id] += $delta;
         }
     }
 
@@ -278,8 +280,10 @@ class TestStatsImpl implements StatsImpl {
             $this->tvals[$name] = $val;
         }
         else {
-            $key = $name . ':' . $player_id;
-            $this->pvals[$key] = $val;
+            if (!isset($this->pvals[$name])) {
+                $this->pvals[$name] = [];
+            }
+            $this->pvals[$name][$player_id] = $val;
         }
     }
 
@@ -291,8 +295,8 @@ class TestStatsImpl implements StatsImpl {
         }
         else {
             $key = $name . ':' . $player_id;
-            if (isset($this->pvals[$key])) {
-                return $this->pvals[$key];
+            if (isset($this->pvals[$name]) && isset($this->pvals[$name][$player_id])) {
+                return $this->pvals[$name][$player_id];
             } else {
                 return $this->pinitvals[$name];
             }
@@ -310,7 +314,6 @@ class IntPlayerStat {
     function __construct(private mixed $impl, public readonly string $name) {
     }
 
-    /** @param int[] $player_ids */
     public function init(int $val = 0): void {
         $this->impl->initPlayerStat($this->name, $val);
     }
@@ -333,7 +336,6 @@ class BoolPlayerStat {
     function __construct(private mixed $impl, public readonly string $name) {
     }
 
-    /** @param int[] $player_ids */
     public function init(bool $val = false): void {
         $this->impl->initPlayerStat($this->name, $val);
     }
@@ -439,12 +441,10 @@ class Stats {
 
     /**
      * Convenience factory method that also initializes.
-     *
-     * @param array<int, int> $player_ids
      */
-    public static function createForTest(array $player_ids = [1, 2]): Stats {
+    public static function createForTest(): Stats {
         $stats = new Stats(new TestStatsImpl());
-        $stats->initAll($player_ids);
+        $stats->initAll();
         return $stats;
     }
 
