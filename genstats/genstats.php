@@ -131,10 +131,33 @@ interface StatsImpl {
     public function enterDeferredMode(): void;
     /** @return list<StatOp> */
     public function exitDeferredMode(): array;
+
+    /** @param IntTableStat|BoolTableStat|FloatTableStat|IntPlayerStat|BoolPlayerStat|FloatPlayerStat $stat */
+    public function registerStat(string $name, mixed $stat): void;
+    /** @return IntTableStat|BoolTableStat|FloatTableStat|IntPlayerStat|BoolPlayerStat|FloatPlayerStat */
+    public function lookup(string $name): mixed;
 }
 
+abstract class AbstractStatsImpl implements StatsImpl {
+    /** @var array<string,IntTableStat|BoolTableStat|FloatTableStat|IntPlayerStat|BoolPlayerStat|FloatPlayerStat> */
+    private array $stats = [];
 
-class GameStatsImpl implements StatsImpl {
+    #[\Override]
+    /** @param IntTableStat|BoolTableStat|FloatTableStat|IntPlayerStat|BoolPlayerStat|FloatPlayerStat $stat */
+    public function registerStat(string $name, mixed $stat): void
+    {
+        $this->stats[$name] = $stat;
+    }
+
+    #[\Override]
+    /** @return IntTableStat|BoolTableStat|FloatTableStat|IntPlayerStat|BoolPlayerStat|FloatPlayerStat */
+    public function lookup(string $name): mixed
+    {
+        return $this->stats[$name];
+    }
+}
+
+class GameStatsImpl extends AbstractStatsImpl {
     /** @var list<StatOp> */
     private array $operations = [];
     private bool $deferredMode = false;
@@ -191,13 +214,20 @@ class GameStatsImpl implements StatsImpl {
             : $this->game->tableStats->get($name);
         if ($this->deferredMode) {
             // Reflect all the operations going on here. Not optimized, should be rarely used.
+            $stat = $this->lookup($name);
             foreach ($this->operations as $_ => $op) {
                 if ($op->player_id == $player_id) {
+                    /** @var int|float|bool */
+                    $val = match ($stat->valType()) {
+                        "int" => intval($op->value),
+                        "float" => floatval($op->value),
+                        "bool" => boolval($op->value),
+                    };
                     switch ($op->op_type) {
                     case OpType::INC:
-                        $val += $op->value; break;
+                        $val += $val; break;
                     case OpType::SET:
-                        $val = $op->value; break;
+                        $val = $val; break;
                     }
                 }
             }
@@ -224,10 +254,14 @@ enum OpType: string
 
 class StatOp {
     /** @param int|float|bool|null $value */
-    public function __construct(public readonly OpType $op_type, public readonly string $name, public readonly ?int $player_id, public readonly mixed $value) {}
+    public function __construct(
+        public readonly OpType $op_type,
+        public readonly string $name,
+        public readonly ?int $player_id,
+        public readonly mixed $value) {}
 }
 
-class TestStatsImpl implements StatsImpl {
+class TestStatsImpl extends AbstractStatsImpl  {
     /** @var array<string,int|float|bool> */
     private $tvals = [];
     /** @var array<string,array<int,int|float|bool>> */
@@ -291,7 +325,6 @@ class TestStatsImpl implements StatsImpl {
             return $this->tvals[$name];
         }
         else {
-            $key = $name . ':' . $player_id;
             if (isset($this->pvals[$name]) && isset($this->pvals[$name][$player_id])) {
                 return $this->pvals[$name][$player_id];
             } else {
@@ -306,10 +339,17 @@ class TestStatsImpl implements StatsImpl {
 // Specific Stat types
 //
 
-class IntPlayerStat {
+interface Stat {
+    /** @return "int"|"float"|"bool" */
+    public function valType(): string;
+}
+
+class IntPlayerStat implements Stat {
     /** @param StatsImpl $impl */
     function __construct(private mixed $impl, public readonly string $name) {
     }
+
+    public function valType(): string { return "int"; }
 
     public function init(int $val = 0): void {
         $this->impl->initPlayerStat($this->name, $val);
@@ -328,10 +368,13 @@ class IntPlayerStat {
     }
 }
 
-class BoolPlayerStat {
+class BoolPlayerStat implements Stat {
     /** @param StatsImpl $impl */
     function __construct(private mixed $impl, public readonly string $name) {
     }
+
+    public function valType(): string { return "bool"; }
+
 
     public function init(bool $val = false): void {
         $this->impl->initPlayerStat($this->name, $val);
@@ -346,10 +389,12 @@ class BoolPlayerStat {
     }
 }
 
-class FloatPlayerStat {
+class FloatPlayerStat implements Stat {
     /** @param StatsImpl $impl */
     function __construct(private mixed $impl, public readonly string $name) {
     }
+
+    public function valType(): string { return "float"; }
 
     public function init(float $val = 0.0): void {
         $this->impl->initPlayerStat($this->name, $val);
@@ -368,10 +413,12 @@ class FloatPlayerStat {
     }
 }
 
-class IntTableStat {
+class IntTableStat implements Stat {
     /** @param StatsImpl $impl */
     function __construct(private mixed $impl, public readonly string $name) {
     }
+
+    public function valType(): string { return "int"; }
 
     public function init(int $val = 0): void {
         $this->impl->initTableStat($this->name, $val);
@@ -390,10 +437,12 @@ class IntTableStat {
     }
 }
 
-class BoolTableStat {
+class BoolTableStat implements Stat {
     /** @param StatsImpl $impl */
     function __construct(private mixed $impl, public readonly string $name) {
     }
+
+    public function valType(): string { return "bool"; }
 
     public function init(bool $val = false): void {
         $this->impl->initTableStat($this->name, $val);
@@ -408,10 +457,12 @@ class BoolTableStat {
     }
 }
 
-class FloatTableStat {
+class FloatTableStat implements Stat {
     /** @param StatsImpl $impl */
     function __construct(private mixed $impl, public readonly string $name) {
     }
+
+    public function valType(): string { return "float"; }
 
     public function init(float $val = 0.0): void {
         $this->impl->initTableStat($this->name, $val);
@@ -456,7 +507,9 @@ class Stats {
               foreach (statsFor($scope, $type) as $n => $id) {
                   $typename =  ucfirst($type) . ucfirst($scope);
                   $name = strtoupper($scope) . "_" . $id; ?>
-        $this-><?php echo  $name ?> = new <?php echo  $typename ?>Stat($impl, "<?php echo $n ?>");
+        $s = new <?php echo  $typename ?>Stat($impl, "<?php echo $n ?>");
+        $impl->registerStat("<?php echo $n ?>", $s);
+        $this-><?php echo  $name ?> = $s;
 <?php         }
           }
       } ?>
@@ -508,11 +561,16 @@ class Stats {
                     break;
                 case OpType::SET:
                     if ($op->value !== null) {
-                        $this->impl->setStat($op->value, $op->name, $op->player_id);
+                        $stat = $this->impl->lookup($op->name);
+                        $val = match ($stat->valType()) {
+                            "int" => intval($op->value),
+                            "float" => floatval($op->value),
+                            "bool" => boolval($op->value),
+                        };
+                        $this->impl->setStat($val, $op->name, $op->player_id);
                     }
                     break;
             }
         }
     }
-
 }
