@@ -253,7 +253,7 @@ enum OpType: string
 }
 
 class StatOp {
-    /** @param int|float|bool|null $value */
+    /** @param int|float|bool|string|null $value */
     public function __construct(
         public readonly OpType $op_type,
         public readonly string $name,
