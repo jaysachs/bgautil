@@ -498,9 +498,13 @@ class Stats {
         foreach ($statOps as $op) {
             switch ($op->op_type) {
                 case OpType::INC:
-                    if ($op->value !== null) {
-                        $this->impl->incStat($op->value, $op->name, $op->player_id);
+                    $t = gettype($op->value);
+                    if ($t != "integer" && $t != "double") {
+                        throw new \Exception("can only increment int or float stats");
                     }
+                    /** @var int|float */
+                    $v = $op->value;
+                    $this->impl->incStat($v, $op->name, $op->player_id);
                     break;
                 case OpType::SET:
                     if ($op->value !== null) {
