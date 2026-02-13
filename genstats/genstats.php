@@ -117,7 +117,9 @@ declare(strict_types=1);
 namespace Bga\Games\<?php echo $gamename ?>;
 
 interface StatsImpl {
+    /** @param int|float $delta */
     public function incStat(mixed $delta, string $name, ?int $player_id = null) : void;
+    /** @param int|float|bool $val */
     public function setStat(mixed $val, string $name, ?int $player_id = null) : void;
     /** @return int|float|bool|null */
     public function getStat(string $name, ?int $player_id = null): mixed;
@@ -152,8 +154,8 @@ class GameStatsImpl implements StatsImpl {
         return $result;
     }
 
-    /** @param float|int $delta */
     #[\Override]
+    /** @param float|int $delta */
     public function incStat(mixed $delta, string $name, ?int $player_id = null) : void {
         if ($this->deferredMode) {
             $this->operations[] = new StatOp(OpType::INC, $name, $player_id, $delta);
@@ -166,8 +168,8 @@ class GameStatsImpl implements StatsImpl {
         }
     }
 
-    /** @param float|int|bool $val */
     #[\Override]
+    /** @param float|int|bool $val */
     public function setStat(mixed $val, string $name, ?int $player_id = null) : void {
         if ($this->deferredMode) {
             $this->operations[] = new StatOp(OpType::SET, $name, $player_id, $val);
@@ -180,8 +182,8 @@ class GameStatsImpl implements StatsImpl {
         }
     }
 
-    /** @return float|int|bool|null */
     #[\Override]
+    /** @return float|int|bool|null */
     public function getStat(string $name, ?int $player_id = null): mixed {
         /** @var float|int|bool */
         $val = ($player_id !== null)
@@ -203,8 +205,8 @@ class GameStatsImpl implements StatsImpl {
         return $val;
     }
 
-    /** @param float|int|bool $val */
     #[\Override]
+    /** @param float|int|bool $val */
     public function initTableStat(string $name, mixed $val): void {
         $this->game->tableStats->init($name, $val);
     }
@@ -222,12 +224,7 @@ enum OpType: string
 
 class StatOp {
     /** @param int|float|bool|null $value */
-    public function __construct(
-        public readonly OpType $op_type,
-        public readonly string $name,
-        public readonly ?int $player_id,
-        public readonly mixed $value
-    ) {}
+    public function __construct(public readonly OpType $op_type, public readonly string $name, public readonly ?int $player_id, public readonly mixed $value) {}
 }
 
 class TestStatsImpl implements StatsImpl {
@@ -245,20 +242,20 @@ class TestStatsImpl implements StatsImpl {
     /** @return array<int, StatOp> */
     public function exitDeferredMode(): array { return []; }
 
-    /** @param int|float|bool $val */
     #[\Override]
+    /** @param int|float|bool $val */
     public function initPlayerStat(string $name, mixed $val): void {
         $this->pinitvals[$name] = $val;
     }
 
-    /** @param int|float|bool $val */
     #[\Override]
+    /** @param int|float|bool $val */
     public function initTableStat(string $name, mixed $val): void {
         $this->tvals[$name] = $val;
     }
 
-    /** @param int|float $delta */
     #[\Override]
+    /** @param int|float $delta */
     public function incStat(mixed $delta, string $name, ?int $player_id = null): void {
         if ($player_id === null) {
             $this->tvals[$name] += $delta;
@@ -273,8 +270,8 @@ class TestStatsImpl implements StatsImpl {
         }
     }
 
-    /** @param int|float|bool $val */
     #[\Override]
+    /** @param int|float|bool $val */
     public function setStat(mixed $val, string $name, ?int $player_id = null): void {
         if ($player_id === null) {
             $this->tvals[$name] = $val;
@@ -287,8 +284,8 @@ class TestStatsImpl implements StatsImpl {
         }
     }
 
-    /** @return int|bool|float|null */
     #[\Override]
+    /** @return int|bool|float|null */
     public function getStat(string $name, ?int $player_id = null): mixed {
         if ($player_id === null) {
             return $this->tvals[$name];
@@ -501,10 +498,14 @@ class Stats {
         foreach ($statOps as $op) {
             switch ($op->op_type) {
                 case OpType::INC:
-                    $this->impl->incStat($op->value, $op->name, $op->player_id);
+                    if ($op->value !== null) {
+                        $this->impl->incStat($op->value, $op->name, $op->player_id);
+                    }
                     break;
                 case OpType::SET:
-                    $this->impl->setStat($op->value, $op->name, $op->player_id);
+                    if ($op->value !== null) {
+                        $this->impl->setStat($op->value, $op->name, $op->player_id);
+                    }
                     break;
             }
         }
