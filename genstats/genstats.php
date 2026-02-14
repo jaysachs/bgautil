@@ -551,13 +551,13 @@ class Stats {
         foreach ($statOps as $op) {
             switch ($op->op_type) {
                 case OpType::INC:
-                    $t = gettype($op->value);
-                    if ($t != "integer" && $t != "double") {
-                        throw new \Exception("can only increment int or float stats");
-                    }
-                    /** @var int|float */
-                    $v = $op->value;
-                    $this->impl->incStat($v, $op->name, $op->player_id);
+                    $stat = $this->impl->lookup($op->name);
+                    $val = match ($stat->valType()) {
+                        "int" => intval($op->value),
+                        "float" => floatval($op->value),
+                        "bool" => throw new \Exception("can not increment bool stats"),
+                    };
+                    $this->impl->incStat($val, $op->name, $op->player_id);
                     break;
                 case OpType::SET:
                     if ($op->value !== null) {
