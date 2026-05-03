@@ -83,7 +83,7 @@ function toIdentifier($name): string {
 };
 
 function statsFor(string $t_or_p, string $type): array {
-    static $payload = file_get_contents("stats.json");
+    static $payload = file_get_contents(file_exists("stats.json") ? "stats.json" : "stats.jsonc");
     static $all_stats = json_decode($payload, true);
 
     @ $s = $all_stats[$t_or_p];
